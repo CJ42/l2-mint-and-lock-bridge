@@ -1,0 +1,14 @@
+{
+  "baseSepolia": {
+    "chainId": 84532,
+    "usdc": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    "collateralBridge": "",
+    "deployBlock": 0
+  },
+  "arbitrumSepolia": {
+    "chainId": 421614,
+    "wrappedUsdc": "",
+    "syntheticBridge": "",
+    "deployBlock": 0
+  }
+}

@@ -1,5 +1,5 @@
 {
-  "name": "my-monorepo",
+  "name": "l2-mint-and-lock-bridge",
   "private": true,
   "workspaces": ["ui", "relayer", "contracts"],
   "packageManager": "bun@1.2.0",

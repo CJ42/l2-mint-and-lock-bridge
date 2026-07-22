@@ -1,8 +1,18 @@
 ---
-description: Use Bun instead of Node.js, npm, pnpm, or vite.
+description: Project specification + Use Bun instead of Node.js, npm, pnpm, or vite.
 globs: "*.ts, *.tsx, *.html, *.css, *.js, *.jsx, package.json"
 alwaysApply: false
 ---
+
+**Project specifications**
+
+- Follow this spec exactly. Where the spec is silent, choose the simplest option and flag the choice in the PR/commit message — never invent architecture.
+- Solidity 0.8.24+, OpenZeppelin only, checks-effects-interactions, SafeERC20 everywhere, custom errors not require-strings, NatSpec on external functions.
+- Never touch nonces/processed semantics or the messageId encoding without explicit instruction.
+- All amounts are 6-decimal. Never format or convert assuming 18.
+- TypeScript strict mode; viem only (no ethers); no classes where functions suffice; structured JSON logging in the relayer.
+- Run forge test after every contract change; do not proceed on red.
+- Commit granularity: one build-order block (§10) per commit minimum.
 
 Default to using Bun instead of Node.js.
 
