@@ -1,0 +1,15 @@
+{
+  "name": "my-monorepo",
+  "private": true,
+  "workspaces": ["ui", "relayer", "contracts"],
+  "packageManager": "bun@1.2.0",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "test": "turbo run test",
+    "lint": "turbo run lint"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.0"
+  }
+}
