@@ -10,12 +10,14 @@ contract DeployBase is Script {
     address internal constant BASE_SEPOLIA_USDC = 0x036CbD53842c5426634e7929541eC2318f3dCF7e;
     uint256 internal constant ARBITRUM_SEPOLIA_CHAIN_ID = 421_614;
 
+    address bridgeAdmin = makeAddr("Bridge Admin");
+
     function run() external returns (CollateralTokenBridge bridge) {
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
         address relayer = vm.envAddress("RELAYER_ADDRESS");
 
         vm.startBroadcast(deployerPrivateKey);
-        bridge = new CollateralTokenBridge(IERC20(BASE_SEPOLIA_USDC), ARBITRUM_SEPOLIA_CHAIN_ID);
+        bridge = new CollateralTokenBridge(bridgeAdmin, IERC20(BASE_SEPOLIA_USDC), ARBITRUM_SEPOLIA_CHAIN_ID);
         bridge.setRelayer(relayer);
         vm.stopBroadcast();
     }

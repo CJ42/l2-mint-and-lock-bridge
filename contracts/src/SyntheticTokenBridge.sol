@@ -9,7 +9,9 @@ contract SyntheticTokenBridge is BridgeBase {
     address public immutable CANONICAL_TOKEN;
     uint256 public immutable DESTINATION_CHAIN_ID;
 
-    constructor(WrappedToken wrappedToken_, address canonicalToken_, uint256 destinationChainId_) {
+    constructor(address owner_, WrappedToken wrappedToken_, address canonicalToken_, uint256 destinationChainId_)
+        BridgeBase(owner_)
+    {
         if (address(wrappedToken_) == address(0) || canonicalToken_ == address(0)) revert InvalidToken();
         wrappedToken = wrappedToken_;
         CANONICAL_TOKEN = canonicalToken_;
@@ -41,6 +43,6 @@ contract SyntheticTokenBridge is BridgeBase {
         bytes32 id = messageId(message);
 
         wrappedToken.burnFrom(msg.sender, amount);
-        emit BridgeInitiated(id, msg.sender, recipient, amount, nonce, block.chainid, destinationChainId);
+        emit BridgeInitiated(id, msg.sender, recipient, amount, nonce, block.chainid, DESTINATION_CHAIN_ID);
     }
 }
