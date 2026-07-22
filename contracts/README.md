@@ -1,66 +1,18 @@
-## Foundry
+# Bridge contracts
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+Foundry contracts for locking Circle testnet USDC on Base Sepolia and minting 6-decimal wrapped USDC on Arbitrum Sepolia.
 
-Foundry consists of:
-
-- **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
-- **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
-- **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
-- **Chisel**: Fast, utilitarian, and verbose solidity REPL.
-
-## Documentation
-
-https://book.getfoundry.sh/
-
-## Usage
-
-### Build
-
-```shell
-$ forge build
+```bash
+forge build
+forge test
+forge fmt --check
 ```
 
-### Test
+Deployment scripts read `DEPLOYER_PRIVATE_KEY` and `RELAYER_ADDRESS`:
 
-```shell
-$ forge test
+```bash
+forge script script/DeployArb.s.sol:DeployArb --rpc-url "$ARBITRUM_SEPOLIA_RPC_URL" --broadcast
+forge script script/DeployBase.s.sol:DeployBase --rpc-url "$BASE_SEPOLIA_RPC_URL" --broadcast
 ```
 
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+Deploy Arbitrum first. Record the resulting addresses and deployment blocks in the repository root `addresses.json`.
