@@ -9,13 +9,13 @@ import {BridgeBase} from "./BridgeBase.sol";
 contract CollateralTokenBridge is BridgeBase {
     using SafeERC20 for IERC20;
 
-    IERC20 public immutable usdc;
-    uint256 public immutable destinationChainId;
+    IERC20 public immutable USDC;
+    uint256 public immutable DESTINATION_CHAIN_ID;
 
     constructor(IERC20 usdc_, uint256 destinationChainId_) {
         if (address(usdc_) == address(0)) revert InvalidToken();
-        usdc = usdc_;
-        destinationChainId = destinationChainId_;
+        USDC = usdc_;
+        DESTINATION_CHAIN_ID = destinationChainId_;
     }
 
     /// @notice Locks canonical USDC and emits a Base-to-Arbitrum bridge message.
@@ -25,8 +25,8 @@ contract CollateralTokenBridge is BridgeBase {
         uint256 nonce = nonces[msg.sender]++;
         BridgeMessage memory message = BridgeMessage({
             originChainId: block.chainid,
-            destinationChainId: destinationChainId,
-            token: address(usdc),
+            destinationChainId: DESTINATION_CHAIN_ID,
+            token: address(USDC),
             sender: msg.sender,
             recipient: recipient,
             amount: amount,
@@ -34,15 +34,25 @@ contract CollateralTokenBridge is BridgeBase {
         });
         bytes32 id = messageId(message);
 
-        usdc.safeTransferFrom(msg.sender, address(this), amount);
-        emit BridgeInitiated(id, msg.sender, recipient, amount, nonce, block.chainid, destinationChainId);
+        USDC.safeTransferFrom(msg.sender, address(this), amount);
+        emit BridgeInitiated(
+            id,
+            msg.sender,
+            recipient,
+            amount,
+            nonce,
+            block.chainid,
+            DESTINATION_CHAIN_ID
+        );
     }
 
     /// @notice Unlocks canonical USDC after a destination-chain burn.
-    function unlock(BridgeMessage calldata message) external onlyRelayer whenNotPaused {
+    function unlock(
+        BridgeMessage calldata message
+    ) external onlyRelayer whenNotPaused {
         bytes32 id = _consumeMessage(message);
 
-        usdc.safeTransfer(message.recipient, message.amount);
+        USDC.safeTransfer(message.recipient, message.amount);
         emit BridgeFinalized(id, message.recipient, message.amount);
     }
 }

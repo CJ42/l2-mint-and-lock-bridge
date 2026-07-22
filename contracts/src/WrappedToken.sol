@@ -1,21 +1,29 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.27;
 
 import {ERC20} from "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
-contract WrappedUSDC is ERC20 {
+contract WrappedToken is ERC20 {
     error NotBridge();
     error InvalidBridge();
 
-    address public immutable bridge;
+    address public immutable BRIDGE;
 
-    constructor(address bridge_) ERC20("Wrapped USDC", "wUSDC") {
-        if (bridge_ == address(0)) revert InvalidBridge();
-        bridge = bridge_;
+    uint8 private immutable _DECIMALS;
+
+    constructor(
+        address bridge_,
+        string memory tokenName_,
+        string memory tokenSymbol_,
+        uint8 decimals_
+    ) ERC20(tokenName_, tokenSymbol_) {
+        require(bridge_ != address(0), InvalidBridge());
+        BRIDGE = bridge_;
+        _DECIMALS = decimals_;
     }
 
     modifier onlyBridge() {
-        if (msg.sender != bridge) revert NotBridge();
+        require(msg.sender == BRIDGE, NotBridge());
         _;
     }
 
@@ -31,7 +39,7 @@ contract WrappedUSDC is ERC20 {
     }
 
     /// @notice Mirrors canonical USDC precision.
-    function decimals() public pure override returns (uint8) {
-        return 6;
+    function decimals() public view override returns (uint8) {
+        return _DECIMALS;
     }
 }
