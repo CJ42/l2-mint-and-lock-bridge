@@ -14,7 +14,7 @@ contract SyntheticTokenBridge is BridgeBase {
         wrappedToken = wrappedToken_;
         CANONICAL_TOKEN = canonicalToken_;
         DESTINATION_CHAIN_ID = destinationChainId_;
-    }x
+    }
 
     /// @notice Mints wrapped USDC after a canonical USDC lock.
     function mint(BridgeMessage calldata message) external onlyRelayer whenNotPaused {

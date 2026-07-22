@@ -35,21 +35,11 @@ contract CollateralTokenBridge is BridgeBase {
         bytes32 id = messageId(message);
 
         USDC.safeTransferFrom(msg.sender, address(this), amount);
-        emit BridgeInitiated(
-            id,
-            msg.sender,
-            recipient,
-            amount,
-            nonce,
-            block.chainid,
-            DESTINATION_CHAIN_ID
-        );
+        emit BridgeInitiated(id, msg.sender, recipient, amount, nonce, block.chainid, DESTINATION_CHAIN_ID);
     }
 
     /// @notice Unlocks canonical USDC after a destination-chain burn.
-    function unlock(
-        BridgeMessage calldata message
-    ) external onlyRelayer whenNotPaused {
+    function unlock(BridgeMessage calldata message) external onlyRelayer whenNotPaused {
         bytes32 id = _consumeMessage(message);
 
         USDC.safeTransfer(message.recipient, message.amount);

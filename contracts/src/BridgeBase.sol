@@ -33,15 +33,8 @@ abstract contract BridgeBase is Ownable2Step, Pausable {
         uint256 originChainId,
         uint256 destinationChainId
     );
-    event BridgeFinalized(
-        bytes32 indexed messageId,
-        address indexed recipient,
-        uint256 amount
-    );
-    event RelayerUpdated(
-        address indexed previousRelayer,
-        address indexed newRelayer
-    );
+    event BridgeFinalized(bytes32 indexed messageId, address indexed recipient, uint256 amount);
+    event RelayerUpdated(address indexed previousRelayer, address indexed newRelayer);
 
     address public relayer;
     mapping(address sender => uint256 nonce) public nonces;
@@ -55,21 +48,18 @@ abstract contract BridgeBase is Ownable2Step, Pausable {
     }
 
     /// @notice Computes the canonical identifier for a bridge message.
-    function messageId(
-        BridgeMessage memory message
-    ) public pure returns (bytes32) {
-        return
-            keccak256(
-                abi.encode(
-                    message.originChainId,
-                    message.destinationChainId,
-                    message.token,
-                    message.sender,
-                    message.recipient,
-                    message.amount,
-                    message.nonce
-                )
-            );
+    function messageId(BridgeMessage memory message) public pure returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                message.originChainId,
+                message.destinationChainId,
+                message.token,
+                message.sender,
+                message.recipient,
+                message.amount,
+                message.nonce
+            )
+        );
     }
 
     /// @notice Updates the trusted relayer account.
@@ -91,21 +81,13 @@ abstract contract BridgeBase is Ownable2Step, Pausable {
         _unpause();
     }
 
-    function _validateInitiation(
-        address recipient,
-        uint256 amount
-    ) internal pure {
+    function _validateInitiation(address recipient, uint256 amount) internal pure {
         require(recipient != address(0), InvalidRecipient());
         require(amount != 0, InvalidAmount());
     }
 
-    function _consumeMessage(
-        BridgeMessage calldata message
-    ) internal returns (bytes32 id) {
-        require(
-            message.destinationChainId == block.chainid,
-            InvalidDestinationChain()
-        );
+    function _consumeMessage(BridgeMessage calldata message) internal returns (bytes32 id) {
+        require(message.destinationChainId == block.chainid, InvalidDestinationChain());
 
         id = messageId(message);
         require(!processed[id], MessageAlreadyProcessed());
