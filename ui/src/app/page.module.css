@@ -1,0 +1,57 @@
+.main {
+  min-height: 100vh;
+  padding-bottom: 72px;
+}
+
+.header {
+  display: flex;
+  width: min(1120px, calc(100% - 32px));
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 auto;
+  padding: 22px 0;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+  font-size: 0.86rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+}
+
+.brand span {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 9px;
+  color: #06130d;
+  background: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+}
+
+.intro {
+  margin-top: 34px;
+  text-align: center;
+}
+
+.intro p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+@media (max-width: 640px) {
+  .header {
+    width: calc(100% - 20px);
+  }
+
+  .intro {
+    margin-top: 18px;
+  }
+}

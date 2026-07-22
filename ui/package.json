@@ -6,25 +6,25 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "@rainbow-me/rainbowkit": "^2",
     "@tailwindcss/postcss": "^4.3.3",
     "@tanstack/react-query": "latest",
-    "contracts": "workspace:*",
     "next": "latest",
     "postcss": "^8.5.22",
     "react": "latest",
     "react-dom": "latest",
     "tailwindcss": "^4.3.3",
-    "viem": "latest",
-    "wagmi": "latest"
+    "viem": "^2",
+    "wagmi": "^2"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "@wagmi/cli": "latest",
-    "typescript": "latest"
+    "typescript": "^5.9.3"
   }
 }

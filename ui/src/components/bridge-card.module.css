@@ -1,0 +1,234 @@
+.card {
+  width: min(100% - 24px, 500px);
+  margin: 42px auto 0;
+  padding: 26px;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgb(25 29 34 / 98%), rgb(17 20 24 / 98%));
+  box-shadow: 0 28px 80px rgb(0 0 0 / 28%);
+}
+
+.cardHeading,
+.fieldLabel,
+.direction {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cardHeading h1 {
+  margin: 2px 0 0;
+  font-size: 1.55rem;
+  letter-spacing: -0.04em;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--accent);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.version {
+  padding: 5px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+}
+
+.notice {
+  margin-top: 20px;
+  padding: 11px 13px;
+  border: 1px solid rgb(245 187 88 / 22%);
+  border-radius: 10px;
+  color: #e8bc70;
+  background: rgb(245 187 88 / 7%);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.direction {
+  gap: 12px;
+  margin: 22px 0;
+  padding: 15px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.direction div {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.direction span,
+.fieldLabel span {
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.direction strong {
+  overflow: hidden;
+  margin-top: 2px;
+  font-size: 0.83rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.direction .destination {
+  text-align: right;
+}
+
+.direction button {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--accent);
+  background: var(--panel);
+  cursor: pointer;
+}
+
+.field {
+  margin-top: 18px;
+}
+
+.field label,
+.fieldLabel label {
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.amountInput {
+  display: flex;
+  align-items: center;
+  margin-top: 8px;
+  padding: 7px 9px 7px 15px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.amountInput:focus-within,
+.recipientInput:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.amountInput input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  color: var(--text);
+  background: transparent;
+  font-size: 1.45rem;
+}
+
+.amountInput > span {
+  margin: 0 10px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.amountInput button {
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  font-size: 0.7rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.advancedToggle {
+  margin-top: 17px;
+  padding: 0;
+  border: 0;
+  color: var(--muted);
+  background: transparent;
+  font-size: 0.76rem;
+  cursor: pointer;
+}
+
+.advancedToggle span {
+  display: inline-block;
+  width: 15px;
+  color: var(--accent);
+}
+
+.recipientInput {
+  width: 100%;
+  margin-top: 8px;
+  padding: 13px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  outline: 0;
+  color: var(--text);
+  background: var(--surface);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
+.error {
+  margin: 13px 2px 0;
+  color: #ff8585;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.action {
+  display: flex;
+  width: 100%;
+  min-height: 49px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 22px;
+  border: 0;
+  border-radius: 13px;
+  color: #06130d;
+  background: var(--accent);
+  font-size: 0.9rem;
+  font-weight: 850;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform 150ms ease,
+    opacity 150ms ease;
+}
+
+.action:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.action:disabled {
+  color: var(--muted);
+  background: #252a2f;
+  cursor: not-allowed;
+}
+
+.footer {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 0.65rem;
+  text-align: center;
+}
+
+@media (max-width: 520px) {
+  .card {
+    padding: 20px;
+  }
+
+  .direction strong {
+    font-size: 0.75rem;
+  }
+}
