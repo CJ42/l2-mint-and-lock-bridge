@@ -38,7 +38,7 @@ contract CollateralTokenBridge is BridgeBase {
         emit BridgeInitiated(id, msg.sender, recipient, amount, nonce, block.chainid, DESTINATION_CHAIN_ID);
     }
 
-    /// @notice Unlocks canonical USDC after a destination-chain burn.
+    /// @notice Unlocks canonical TOKEN after a destination-chain burn.
     function unlock(BridgeMessage calldata message) external onlyRelayer whenNotPaused {
         bytes32 id = _consumeMessage(message);
 

@@ -12,8 +12,6 @@ contract DeployArb is Script {
     address internal constant BASE_SEPOLIA_USDC = 0x036CbD53842c5426634e7929541eC2318f3dCF7e;
     uint256 internal constant BASE_SEPOLIA_CHAIN_ID = 84_532;
 
-    address bridgeAdmin = makeAddr("Bridge Admin");
-
     function run() external returns (WrappedToken token, SyntheticTokenBridge bridge) {
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);

@@ -45,9 +45,12 @@ export const directions: Record<'baseToArbitrum' | 'arbitrumToBase', BridgeDirec
 }
 
 export function formatTokenAmount(amount: bigint) {
-  return new Intl.NumberFormat('en-US', {
-    maximumFractionDigits: 6,
-  }).format(Number(formatUnits(amount, 6)))
+  const [integer, fraction = ''] = formatUnits(amount, 6).split('.')
+   const formattedInteger = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(
+     BigInt(integer),
+   )
+   const trimmedFraction = fraction.replace(/0+$/, '')
+   return trimmedFraction ? `${formattedInteger}.${trimmedFraction}` : formattedInteger
 }
 
 export function truncateHash(value: string, leading = 6, trailing = 4) {

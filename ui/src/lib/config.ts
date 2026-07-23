@@ -9,22 +9,18 @@ function readAddress(value: string | undefined): Address | undefined {
 }
 
 export const addresses = {
-  baseBridge: readAddress(
-    process.env.NEXT_PUBLIC_BASE_BRIDGE_ADDRESS ||
-      deploymentAddresses.baseSepolia.collateralBridge,
-  ),
-  baseUsdc: readAddress(
-    process.env.NEXT_PUBLIC_BASE_USDC_ADDRESS ||
-      deploymentAddresses.baseSepolia.usdc,
-  ),
-  arbitrumBridge: readAddress(
-    process.env.NEXT_PUBLIC_ARBITRUM_BRIDGE_ADDRESS ||
-      deploymentAddresses.arbitrumSepolia.syntheticBridge,
-  ),
-  arbitrumWusdc: readAddress(
-    process.env.NEXT_PUBLIC_ARBITRUM_WUSDC_ADDRESS ||
-      deploymentAddresses.arbitrumSepolia.wrappedUsdc,
-  ),
+  baseBridge:
+     readAddress(process.env.NEXT_PUBLIC_BASE_BRIDGE_ADDRESS) ??
+     readAddress(deploymentAddresses.baseSepolia.collateralBridge),
+   baseUsdc:
+     readAddress(process.env.NEXT_PUBLIC_BASE_USDC_ADDRESS) ??
+     readAddress(deploymentAddresses.baseSepolia.usdc),
+   arbitrumBridge:
+     readAddress(process.env.NEXT_PUBLIC_ARBITRUM_BRIDGE_ADDRESS) ??
+     readAddress(deploymentAddresses.arbitrumSepolia.syntheticBridge),
+   arbitrumWusdc:
+     readAddress(process.env.NEXT_PUBLIC_ARBITRUM_WUSDC_ADDRESS) ??
+     readAddress(deploymentAddresses.arbitrumSepolia.wrappedUsdc),
 }
 
 export const rpcUrls = {
