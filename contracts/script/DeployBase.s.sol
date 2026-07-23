@@ -12,10 +12,11 @@ contract DeployBase is Script {
 
     function run() external returns (CollateralTokenBridge bridge) {
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
+        address deployer = vm.addr(deployerPrivateKey);
         address relayer = vm.envAddress("RELAYER_ADDRESS");
 
         vm.startBroadcast(deployerPrivateKey);
-        bridge = new CollateralTokenBridge(IERC20(BASE_SEPOLIA_USDC), ARBITRUM_SEPOLIA_CHAIN_ID);
+        bridge = new CollateralTokenBridge(deployer, IERC20(BASE_SEPOLIA_USDC), ARBITRUM_SEPOLIA_CHAIN_ID);
         bridge.setRelayer(relayer);
         vm.stopBroadcast();
     }

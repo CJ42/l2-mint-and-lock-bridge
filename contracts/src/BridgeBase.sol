@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.27;
 
 import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {Ownable2Step} from "openzeppelin-contracts/contracts/access/Ownable2Step.sol";
@@ -40,10 +40,10 @@ abstract contract BridgeBase is Ownable2Step, Pausable {
     mapping(address sender => uint256 nonce) public nonces;
     mapping(bytes32 messageId_ => bool isProcessed) public processed;
 
-    constructor() Ownable(msg.sender) {}
+    constructor(address owner_) Ownable(owner_) {}
 
     modifier onlyRelayer() {
-        if (msg.sender != relayer) revert NotRelayer();
+        require(msg.sender == relayer, NotRelayer());
         _;
     }
 
@@ -64,7 +64,7 @@ abstract contract BridgeBase is Ownable2Step, Pausable {
 
     /// @notice Updates the trusted relayer account.
     function setRelayer(address newRelayer) external onlyOwner {
-        if (newRelayer == address(0)) revert InvalidRelayer();
+        require(newRelayer != address(0), InvalidRelayer());
 
         address previousRelayer = relayer;
         relayer = newRelayer;
@@ -82,15 +82,15 @@ abstract contract BridgeBase is Ownable2Step, Pausable {
     }
 
     function _validateInitiation(address recipient, uint256 amount) internal pure {
-        if (recipient == address(0)) revert InvalidRecipient();
-        if (amount == 0) revert InvalidAmount();
+        require(recipient != address(0), InvalidRecipient());
+        require(amount != 0, InvalidAmount());
     }
 
     function _consumeMessage(BridgeMessage calldata message) internal returns (bytes32 id) {
-        if (message.destinationChainId != block.chainid) revert InvalidDestinationChain();
+        require(message.destinationChainId == block.chainid, InvalidDestinationChain());
 
         id = messageId(message);
-        if (processed[id]) revert MessageAlreadyProcessed();
+        require(!processed[id], MessageAlreadyProcessed());
 
         // TODO(signature-verification): Production finalization would verify an EIP-712
         // signature over id against a rotatable relayer key set or n-of-m attestation.

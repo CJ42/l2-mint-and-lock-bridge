@@ -119,6 +119,7 @@ contract BridgeUnitTest is TestSetup {
     }
 
     function testPauseGatesEveryEntrypoint() public {
+        vm.prank(bridgeAdmin);
         collateralBridge.pause();
         vm.chainId(BASE_CHAIN_ID);
 
@@ -130,6 +131,7 @@ contract BridgeUnitTest is TestSetup {
         vm.prank(relayer);
         collateralBridge.unlock(arbitrumToBaseMessage(0));
 
+        vm.prank(bridgeAdmin);
         syntheticBridge.pause();
         vm.chainId(ARBITRUM_CHAIN_ID);
 
@@ -143,6 +145,7 @@ contract BridgeUnitTest is TestSetup {
     }
 
     function testRelayerRotationAndOwnershipHandover() public {
+        vm.prank(bridgeAdmin);
         address nextOwner = makeAddr("nextOwner");
         address nextRelayer = makeAddr("nextRelayer");
 
