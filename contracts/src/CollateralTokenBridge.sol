@@ -11,6 +11,7 @@ import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 // modules
 import {BridgeBase} from "./BridgeBase.sol";
+import {ReentrancyGuardTransient} from "openzeppelin-contracts/contracts/utils/ReentrancyGuardTransient.sol";
 
 // libraries
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -31,7 +32,7 @@ using {BridgeLib.computeBridgeMessageId} for Types.BridgeMessage;
 //             []    | L2 Collateral Token Bridge |     []
 //             []    ==============================     []
 //
-contract CollateralTokenBridge is BridgeBase {
+contract CollateralTokenBridge is BridgeBase, ReentrancyGuardTransient {
     using SafeERC20 for IERC20;
 
     IERC20 public immutable TOKEN;
@@ -51,7 +52,10 @@ contract CollateralTokenBridge is BridgeBase {
     }
 
     /// @notice Locks canonical TOKEN and emits a Base-to-Arbitrum bridge message.
-    function lock(address recipient, uint256 amount) external whenNotPaused {
+    function lock(
+        address recipient,
+        uint256 amount
+    ) external whenNotPaused nonReentrant {
         _validateInputs(recipient, amount);
 
         uint256 nonce = nonces[msg.sender]++;
@@ -83,7 +87,7 @@ contract CollateralTokenBridge is BridgeBase {
     /// @notice Unlocks canonical TOKEN after a destination-chain burn.
     function unlock(
         Types.BridgeMessage calldata message
-    ) external onlyRelayer whenNotPaused {
+    ) external onlyRelayer whenNotPaused nonReentrant {
         bytes32 messageId = _consumeMessage(message);
 
         emit BridgeFinalized(messageId, message.recipient, message.amount);

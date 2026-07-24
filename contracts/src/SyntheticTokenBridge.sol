@@ -9,6 +9,7 @@ import "./BridgeLib.sol" as BridgeLib;
 // modules
 import {BridgeBase} from "./BridgeBase.sol";
 import {WrappedToken} from "./WrappedToken.sol";
+import {ReentrancyGuardTransient} from "openzeppelin-contracts/contracts/utils/ReentrancyGuardTransient.sol";
 
 // libraries
 using {BridgeLib.computeBridgeMessageId} for Types.BridgeMessage;
@@ -27,7 +28,7 @@ using {BridgeLib.computeBridgeMessageId} for Types.BridgeMessage;
 //             []     | L2 Synthetic Token Bridge |     []
 //             []     =============================     []
 //
-contract SyntheticTokenBridge is BridgeBase {
+contract SyntheticTokenBridge is BridgeBase, ReentrancyGuardTransient {
     WrappedToken public immutable wrappedToken;
     address public immutable CANONICAL_TOKEN;
     uint256 public immutable DESTINATION_CHAIN_ID;
@@ -51,7 +52,7 @@ contract SyntheticTokenBridge is BridgeBase {
     /// @notice Mints wrapped USDC after a canonical USDC lock.
     function mint(
         Types.BridgeMessage calldata message
-    ) external onlyRelayer whenNotPaused {
+    ) external onlyRelayer whenNotPaused nonReentrant {
         bytes32 id = _consumeMessage(message);
 
         wrappedToken.mint(message.recipient, message.amount);
@@ -59,7 +60,10 @@ contract SyntheticTokenBridge is BridgeBase {
     }
 
     /// @notice Burns approved wrapped USDC and emits an Arbitrum-to-Base bridge message.
-    function burn(address recipient, uint256 amount) external whenNotPaused {
+    function burn(
+        address recipient,
+        uint256 amount
+    ) external whenNotPaused nonReentrant {
         _validateInputs(recipient, amount);
 
         uint256 nonce = nonces[msg.sender]++;
