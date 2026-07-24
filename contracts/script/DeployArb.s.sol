@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.27;
 
 import {Script} from "forge-std/Script.sol";
 
@@ -7,7 +7,7 @@ import {SyntheticTokenBridge} from "../src/SyntheticTokenBridge.sol";
 import {WrappedToken} from "../src/WrappedToken.sol";
 
 contract DeployArb is Script {
-    error UnexpectedBridgeAddress();
+    error UnexpectedBridgeAddress(address expected, address actual);
 
     address internal constant BASE_SEPOLIA_USDC = 0x036CbD53842c5426634e7929541eC2318f3dCF7e;
     uint256 internal constant BASE_SEPOLIA_CHAIN_ID = 84_532;
@@ -26,8 +26,9 @@ contract DeployArb is Script {
         bridge.setRelayer(relayer);
         vm.stopBroadcast();
 
-        if (address(bridge) != predictedBridge) {
-            revert UnexpectedBridgeAddress();
-        }
+        require(
+            address(bridge) == predictedBridge,
+            UnexpectedBridgeAddress({expected: predictedBridge, actual: address(bridge)})
+        );
     }
 }

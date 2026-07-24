@@ -4,6 +4,8 @@ pragma solidity ^0.8.24;
 import {BridgeBase} from "../src/BridgeBase.sol";
 import {TestSetup} from "./TestSetup.sol";
 
+import "../src/Errors.sol" as Errors;
+
 contract ReplayTest is TestSetup {
     function testMintRejectsReplay() public {
         vm.chainId(ARBITRUM_CHAIN_ID);
@@ -34,7 +36,9 @@ contract ReplayTest is TestSetup {
     function testMintRejectsWrongDestination() public {
         vm.chainId(BASE_CHAIN_ID);
 
-        vm.expectRevert(BridgeBase.InvalidDestinationChain.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.InvalidDestinationChainId.selector, BASE_CHAIN_ID, ARBITRUM_CHAIN_ID)
+        );
         vm.prank(relayer);
         syntheticBridge.mint(baseToArbitrumMessage(0));
     }
@@ -42,7 +46,9 @@ contract ReplayTest is TestSetup {
     function testUnlockRejectsWrongDestination() public {
         vm.chainId(ARBITRUM_CHAIN_ID);
 
-        vm.expectRevert(BridgeBase.InvalidDestinationChain.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.InvalidDestinationChainId.selector, ARBITRUM_CHAIN_ID, BASE_CHAIN_ID)
+        );
         vm.prank(relayer);
         collateralBridge.unlock(arbitrumToBaseMessage(0));
     }
