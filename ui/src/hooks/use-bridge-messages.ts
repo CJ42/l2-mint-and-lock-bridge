@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   createPublicClient,
   http,
+  fallback,
   type Address,
   type Chain,
   type Hex,
@@ -18,12 +19,18 @@ import { addresses, rpcUrls, scanConfiguration } from '@/lib/config'
 
 const baseClient = createPublicClient({
   chain: baseSepolia,
-  transport: http(rpcUrls.base),
+  transport: fallback([
+    http(rpcUrls.baseSepolia.default),
+    http(rpcUrls.baseSepolia.fallback),
+  ])
 })
 
 const arbitrumClient = createPublicClient({
   chain: arbitrumSepolia,
-  transport: http(rpcUrls.arbitrum),
+  transport: fallback([
+    http(rpcUrls.arbitrumSepolia.default),
+    http(rpcUrls.arbitrumSepolia.fallback),
+  ])
 })
 
 const blockTimestampCache = new Map<string, number>()
