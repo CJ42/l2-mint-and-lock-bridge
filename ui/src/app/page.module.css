@@ -1,6 +1,6 @@
 .main {
   min-height: 100vh;
-  padding-bottom: 72px;
+  padding-bottom: 88px;
 }
 
 .header {
@@ -9,49 +9,90 @@
   align-items: center;
   justify-content: space-between;
   margin: 0 auto;
-  padding: 22px 0;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--border);
 }
 
 .brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--text);
+  color: var(--ink);
   font-size: 0.86rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   text-decoration: none;
 }
 
-.brand span {
+.top {
   display: grid;
-  width: 32px;
-  height: 32px;
-  place-items: center;
-  border-radius: 9px;
-  color: #06130d;
-  background: var(--accent);
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
+  width: min(1120px, calc(100% - 32px));
+  align-items: start;
+  gap: 56px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 500px);
+  margin: 0 auto;
+  padding-top: 76px;
 }
 
-.intro {
-  margin-top: 34px;
-  text-align: center;
+.hero {
+  padding-top: 4px;
 }
 
-.intro p {
+.title {
   margin: 0;
+  font-size: clamp(2.6rem, 7vw, 4.25rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.02;
+  text-transform: uppercase;
+}
+
+.title span {
+  color: var(--orange);
+}
+
+.subtitle {
+  max-width: 48ch;
+  margin: 18px 0 0;
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: 0.86rem;
+  line-height: 1.6;
+}
+
+.facts {
+  max-width: 46ch;
+  margin: 30px 0 0;
+  padding: 0;
+  border-top: 1px solid var(--border);
+  list-style: none;
+}
+
+.facts li {
+  padding: 12px 0 0;
+  color: var(--muted);
+  font-size: 0.7rem;
+  line-height: 1.55;
+}
+
+.facts li::before {
+  display: inline-block;
+  width: 18px;
+  color: var(--blue);
+  content: "→";
+}
+
+@media (max-width: 900px) {
+  .top {
+    gap: 34px;
+    grid-template-columns: minmax(0, 1fr);
+    padding-top: 44px;
+  }
+
+  .facts {
+    max-width: none;
+  }
 }
 
 @media (max-width: 640px) {
-  .header {
+  .header,
+  .top {
     width: calc(100% - 20px);
-  }
-
-  .intro {
-    margin-top: 18px;
   }
 }
