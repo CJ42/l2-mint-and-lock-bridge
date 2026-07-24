@@ -121,7 +121,7 @@ contract BridgeUnitTest is TestSetup {
 
     function testOnlyRelayerCanFinalize() public {
         vm.chainId(ARBITRUM_CHAIN_ID);
-        vm.expectRevert(Errors.NotRelayer.selector);
+        vm.expectRevert(abi.encodeWithSelector(Errors.NotRelayer.selector, address(this)));
         syntheticBridge.mint(baseToArbitrumMessage(0));
     }
 
