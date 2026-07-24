@@ -4,22 +4,44 @@ pragma solidity ^0.8.24;
 import {BridgeBase} from "./BridgeBase.sol";
 import {WrappedToken} from "./WrappedToken.sol";
 
+//             ..                                       ..
+//             []                                       []
+//           .:[]:_                                   ,:[]:.
+//         .: :[]: :-.                             ,-: :[]: :.
+//       .: : :[]: : :`._                       ,.': : :[]: : :.
+//     .: : : :[]: : : : :-._               _,-: : : : :[]: : : :.
+// _..: : : : :[]: : : : : : :-._________.-: : : : : : :[]: : : : :-._
+// _:_:_:_:_:_:[]:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:[]:_:_:_:_:_:_
+// !!!!!!!!!!!![]!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!![]!!!!!!!!!!!!!
+// ^^^^^^^^^^^^[]^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[]^^^^^^^^^^^^^
+//             []     =============================     []
+//             []     | L2 Synthetic Token Bridge |     []
+//             []     =============================     []
+//
 contract SyntheticTokenBridge is BridgeBase {
     WrappedToken public immutable wrappedToken;
     address public immutable CANONICAL_TOKEN;
     uint256 public immutable DESTINATION_CHAIN_ID;
 
-    constructor(address owner_, WrappedToken wrappedToken_, address canonicalToken_, uint256 destinationChainId_)
-        BridgeBase(owner_)
-    {
-        if (address(wrappedToken_) == address(0) || canonicalToken_ == address(0)) revert InvalidToken();
+    constructor(
+        address owner_,
+        WrappedToken wrappedToken_,
+        address canonicalToken_,
+        uint256 destinationChainId_
+    ) BridgeBase(owner_) {
+        if (
+            address(wrappedToken_) == address(0) ||
+            canonicalToken_ == address(0)
+        ) revert InvalidToken();
         wrappedToken = wrappedToken_;
         CANONICAL_TOKEN = canonicalToken_;
         DESTINATION_CHAIN_ID = destinationChainId_;
     }
 
     /// @notice Mints wrapped USDC after a canonical USDC lock.
-    function mint(BridgeMessage calldata message) external onlyRelayer whenNotPaused {
+    function mint(
+        BridgeMessage calldata message
+    ) external onlyRelayer whenNotPaused {
         bytes32 id = _consumeMessage(message);
 
         wrappedToken.mint(message.recipient, message.amount);
@@ -43,6 +65,14 @@ contract SyntheticTokenBridge is BridgeBase {
         bytes32 id = messageId(message);
 
         wrappedToken.burnFrom(msg.sender, amount);
-        emit BridgeInitiated(id, msg.sender, recipient, amount, nonce, block.chainid, DESTINATION_CHAIN_ID);
+        emit BridgeInitiated(
+            id,
+            msg.sender,
+            recipient,
+            amount,
+            nonce,
+            block.chainid,
+            DESTINATION_CHAIN_ID
+        );
     }
 }

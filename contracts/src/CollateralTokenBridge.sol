@@ -6,13 +6,31 @@ import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/Safe
 
 import {BridgeBase} from "./BridgeBase.sol";
 
+//             ..                                       ..
+//             []                                       []
+//           .:[]:_                                   ,:[]:.
+//         .: :[]: :-.                             ,-: :[]: :.
+//       .: : :[]: : :`._                       ,.': : :[]: : :.
+//     .: : : :[]: : : : :-._               _,-: : : : :[]: : : :.
+// _..: : : : :[]: : : : : : :-._________.-: : : : : : :[]: : : : :-._
+// _:_:_:_:_:_:[]:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:[]:_:_:_:_:_:_
+// !!!!!!!!!!!![]!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!![]!!!!!!!!!!!!!
+// ^^^^^^^^^^^^[]^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[]^^^^^^^^^^^^^
+//             []    ==============================     []
+//             []    | L2 Collateral Token Bridge |     []
+//             []    ==============================     []
+//
 contract CollateralTokenBridge is BridgeBase {
     using SafeERC20 for IERC20;
 
     IERC20 public immutable TOKEN;
     uint256 public immutable DESTINATION_CHAIN_ID;
 
-    constructor(address owner_, IERC20 token_, uint256 destinationChainId_) BridgeBase(owner_) {
+    constructor(
+        address owner_,
+        IERC20 token_,
+        uint256 destinationChainId_
+    ) BridgeBase(owner_) {
         if (address(token_) == address(0)) revert InvalidToken();
         TOKEN = token_;
         DESTINATION_CHAIN_ID = destinationChainId_;
@@ -35,11 +53,21 @@ contract CollateralTokenBridge is BridgeBase {
         bytes32 id = messageId(message);
 
         TOKEN.safeTransferFrom(msg.sender, address(this), amount);
-        emit BridgeInitiated(id, msg.sender, recipient, amount, nonce, block.chainid, DESTINATION_CHAIN_ID);
+        emit BridgeInitiated(
+            id,
+            msg.sender,
+            recipient,
+            amount,
+            nonce,
+            block.chainid,
+            DESTINATION_CHAIN_ID
+        );
     }
 
     /// @notice Unlocks canonical TOKEN after a destination-chain burn.
-    function unlock(BridgeMessage calldata message) external onlyRelayer whenNotPaused {
+    function unlock(
+        BridgeMessage calldata message
+    ) external onlyRelayer whenNotPaused {
         bytes32 id = _consumeMessage(message);
 
         TOKEN.safeTransfer(message.recipient, message.amount);
