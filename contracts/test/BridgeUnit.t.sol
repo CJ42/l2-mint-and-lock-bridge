@@ -24,11 +24,7 @@ contract BridgeUnitTest is TestSetup {
         uint256 originChainId,
         uint256 destinationChainId
     );
-    event BridgeFinalized(
-        bytes32 indexed messageId,
-        address indexed recipient,
-        uint256 amount
-    );
+    event BridgeFinalized(bytes32 indexed messageId, address indexed recipient, uint256 amount);
 
     function testMessageIdSeparatesChainPairs() public view {
         Types.BridgeMessage memory firstMessage = baseToArbitrumMessage(0);
@@ -36,10 +32,7 @@ contract BridgeUnitTest is TestSetup {
         secondMessage.originChainId = ARBITRUM_CHAIN_ID;
         secondMessage.destinationChainId = BASE_CHAIN_ID;
 
-        assertNotEq(
-            firstMessage.computeBridgeMessageId(),
-            secondMessage.computeBridgeMessageId()
-        );
+        assertNotEq(firstMessage.computeBridgeMessageId(), secondMessage.computeBridgeMessageId());
     }
 
     function testMessageIdSeparatesNonces() public view {
@@ -47,10 +40,7 @@ contract BridgeUnitTest is TestSetup {
         Types.BridgeMessage memory secondMessage = baseToArbitrumMessage(0);
         secondMessage.nonce = 1;
 
-        assertNotEq(
-            firstMessage.computeBridgeMessageId(),
-            secondMessage.computeBridgeMessageId()
-        );
+        assertNotEq(firstMessage.computeBridgeMessageId(), secondMessage.computeBridgeMessageId());
     }
 
     function testMessageIdUsesCanonicalAbiEncoding() public view {
@@ -78,15 +68,7 @@ contract BridgeUnitTest is TestSetup {
         Types.BridgeMessage memory message = baseToArbitrumMessage(0);
         bytes32 id = message.computeBridgeMessageId();
         vm.expectEmit(true, true, true, true);
-        emit BridgeInitiated(
-            id,
-            user,
-            recipient,
-            AMOUNT,
-            0,
-            BASE_CHAIN_ID,
-            ARBITRUM_CHAIN_ID
-        );
+        emit BridgeInitiated(id, user, recipient, AMOUNT, 0, BASE_CHAIN_ID, ARBITRUM_CHAIN_ID);
         collateralBridge.lock(recipient, AMOUNT);
         vm.stopPrank();
 
@@ -119,15 +101,7 @@ contract BridgeUnitTest is TestSetup {
         });
         bytes32 burnId = burnMessage.computeBridgeMessageId();
         vm.expectEmit(true, true, true, true);
-        emit BridgeInitiated(
-            burnId,
-            recipient,
-            user,
-            AMOUNT,
-            0,
-            ARBITRUM_CHAIN_ID,
-            BASE_CHAIN_ID
-        );
+        emit BridgeInitiated(burnId, recipient, user, AMOUNT, 0, ARBITRUM_CHAIN_ID, BASE_CHAIN_ID);
         syntheticBridge.burn(user, AMOUNT);
         vm.stopPrank();
 
@@ -191,32 +165,15 @@ contract BridgeUnitTest is TestSetup {
         assertEq(collateralBridge.owner(), nextOwner);
         assertEq(collateralBridge.relayer(), nextRelayer);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Ownable.OwnableUnauthorizedAccount.selector,
-                address(this)
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
         collateralBridge.pause();
     }
 
     function testRejectsInvalidInitiationInputs() public {
         vm.startPrank(user);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Errors.InvalidBridgeTxInputs.selector,
-                recipient,
-                0
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(Errors.InvalidBridgeTxInputs.selector, recipient, 0));
         collateralBridge.lock(recipient, 0);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Errors.InvalidBridgeTxInputs.selector,
-                address(0),
-                AMOUNT
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(Errors.InvalidBridgeTxInputs.selector, address(0), AMOUNT));
         collateralBridge.lock(address(0), AMOUNT);
         vm.stopPrank();
     }

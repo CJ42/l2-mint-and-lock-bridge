@@ -38,24 +38,14 @@ contract CollateralTokenBridge is BridgeBase, ReentrancyGuardTransient {
     IERC20 public immutable TOKEN;
     uint256 public immutable DESTINATION_CHAIN_ID;
 
-    constructor(
-        address owner_,
-        IERC20 token_,
-        uint256 destinationChainId_
-    ) BridgeBase(owner_) {
-        require(
-            address(token_) != address(0),
-            Errors.TokenCannotBeZeroAddress()
-        );
+    constructor(address owner_, IERC20 token_, uint256 destinationChainId_) BridgeBase(owner_) {
+        require(address(token_) != address(0), Errors.TokenCannotBeZeroAddress());
         TOKEN = token_;
         DESTINATION_CHAIN_ID = destinationChainId_;
     }
 
     /// @notice Locks canonical TOKEN and emits a Base-to-Arbitrum bridge message.
-    function lock(
-        address recipient,
-        uint256 amount
-    ) external whenNotPaused nonReentrant {
+    function lock(address recipient, uint256 amount) external whenNotPaused nonReentrant {
         _validateInputs(recipient, amount);
 
         uint256 nonce = nonces[msg.sender]++;
@@ -70,24 +60,15 @@ contract CollateralTokenBridge is BridgeBase, ReentrancyGuardTransient {
         });
         bytes32 messageId = message.computeBridgeMessageId();
 
-        // events are state changing operations and must be emitted before any external calls
-        emit BridgeInitiated(
-            messageId,
-            msg.sender,
-            recipient,
-            amount,
-            nonce,
-            block.chainid,
-            DESTINATION_CHAIN_ID
-        );
+        // events are a kind of state changing operations (not on the smart contract but on the chain as they write a log)
+        // emit before external calls to respect strictly CEI
+        emit BridgeInitiated(messageId, msg.sender, recipient, amount, nonce, block.chainid, DESTINATION_CHAIN_ID);
 
         TOKEN.safeTransferFrom(msg.sender, address(this), amount);
     }
 
     /// @notice Unlocks canonical TOKEN after a destination-chain burn.
-    function unlock(
-        Types.BridgeMessage calldata message
-    ) external onlyRelayer whenNotPaused nonReentrant {
+    function unlock(Types.BridgeMessage calldata message) external onlyRelayer whenNotPaused nonReentrant {
         bytes32 messageId = _consumeMessage(message);
 
         emit BridgeFinalized(messageId, message.recipient, message.amount);

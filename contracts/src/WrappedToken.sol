@@ -13,12 +13,9 @@ contract WrappedToken is ERC20, ERC20Burnable {
     address public immutable BRIDGE;
     uint8 internal immutable _DECIMALS;
 
-    constructor(
-        address bridge_,
-        string memory tokenName_,
-        string memory tokenSymbol_,
-        uint8 decimals_
-    ) ERC20(tokenName_, tokenSymbol_) {
+    constructor(address bridge_, string memory tokenName_, string memory tokenSymbol_, uint8 decimals_)
+        ERC20(tokenName_, tokenSymbol_)
+    {
         require(bridge_ != address(0), Errors.BridgeCannotBeZeroAddress());
         BRIDGE = bridge_;
         _DECIMALS = decimals_;
@@ -36,29 +33,28 @@ contract WrappedToken is ERC20, ERC20Burnable {
 
     /// @dev Disable the single burn functions so to always ensure invariant locked collateral tokens on chains equal
     /// number of synthetic tokens on this current chain where the WrappedToken is deployed.
-    function burn(uint256 amount) public override {
+    function burn(
+        uint256 /* amount */
+    )
+        public
+        override
+    {
         revert Errors.BurningTokensDisallowedForUsers();
     }
 
     /// @dev Overriden function to only allow the linked bridge contract to burn tokens.
-    function burnFrom(
-        address account,
-        uint256 amount
-    ) external override onlyBridge {
+    function burnFrom(address account, uint256 amount) public override onlyBridge {
         super.burnFrom(account, amount);
     }
 
     /// @notice Mirrors canonical token precision when the wrapped token was deployed and configured
     /// (e.g: USDC has 6 decimals, WBTC has 8 decimals, etc...).
-    function decimals() external view override returns (uint8) {
+    function decimals() public view override returns (uint8) {
         return _DECIMALS;
     }
 
     /// @dev Throws if the caller is not the linked bridge contract.
     function _checkCallerIsBridge() internal view {
-        require(
-            msg.sender == BRIDGE,
-            Errors.CallerIsNotBridge({invalidCaller: msg.sender})
-        );
+        require(msg.sender == BRIDGE, Errors.CallerIsNotBridge({invalidCaller: msg.sender}));
     }
 }
