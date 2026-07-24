@@ -100,13 +100,47 @@ Which phases cover which requirements. Populated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ABI-01 … LIVE-09 | TBD | Pending |
+| ABI-01 | Phase 1 | Pending |
+| ABI-02 | Phase 1 | Pending |
+| ABI-03 | Phase 1 | Pending |
+| ERR-01 | Phase 1 | Pending |
+| ERR-02 | Phase 1 | Pending |
+| ERR-03 | Phase 1 | Pending |
+| ERR-04 | Phase 1 | Pending |
+| ERR-05 | Phase 1 | Pending |
+| ERR-06 | Phase 1 | Pending |
+| ERR-07 | Phase 1 | Pending |
+| ERR-08 | Phase 1 | Pending |
+| ERR-09 | Phase 1 | Pending |
+| FLOW-01 | Phase 1 | Pending |
+| FLOW-05 | Phase 1 | Pending |
+| LIVE-01 | Phase 2 | Pending |
+| LIVE-02 | Phase 2 | Pending |
+| LIVE-03 | Phase 2 | Pending |
+| LIVE-04 | Phase 2 | Pending |
+| LIVE-05 | Phase 2 | Pending |
+| LIVE-06 | Phase 2 | Pending |
+| LIVE-07 | Phase 2 | Pending |
+| LIVE-08 | Phase 2 | Pending |
+| LIVE-09 | Phase 2 | Pending |
+| FLOW-02 | Phase 3 | Pending |
+| FLOW-03 | Phase 3 | Pending |
+| FLOW-04 | Phase 3 | Pending |
+| SIM-01 | Phase 3 | Pending |
+| SIM-02 | Phase 3 | Pending |
+| SIM-03 | Phase 3 | Pending |
+| STEP-01 | Phase 3 | Pending |
+| STEP-02 | Phase 3 | Pending |
+| STEP-03 | Phase 3 | Pending |
+| STEP-04 | Phase 3 | Pending |
+| BTN-01 | Phase 3 | Pending |
+| BTN-02 | Phase 3 | Pending |
 
 **Coverage:**
-- v1 requirements: 31 total
-- Mapped to phases: 0
-- Unmapped: 31 ⚠️
+- v1 requirements: 35 total <!-- corrected during roadmap creation: the "## v1 Requirements" section lists 35 requirement IDs (ABI:3, ERR:9, SIM:3, FLOW:5, STEP:4, BTN:2, LIVE:9); the previous "31 total" placeholder predated this count and was stale -->
+- Mapped to phases: 35
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-07-24*
-*Last updated: 2026-07-24 after initial definition*
+*Last updated: 2026-07-24 after roadmap creation (Phase 1-3 mapping, coverage corrected 31→35)*
