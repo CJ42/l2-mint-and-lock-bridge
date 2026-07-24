@@ -25,6 +25,28 @@ export interface BridgeDirection {
   action: 'lock' | 'burn'
 }
 
+export interface ChainMeta {
+  id: typeof baseSepolia.id | typeof arbitrumSepolia.id
+  name: string
+  logo: string
+  tokenSymbol: 'USDC' | 'wUSDC'
+}
+
+export const chains: Record<'base' | 'arbitrum', ChainMeta> = {
+  base: {
+    id: baseSepolia.id,
+    name: 'Base Sepolia',
+    logo: '/base-logo.png',
+    tokenSymbol: 'USDC',
+  },
+  arbitrum: {
+    id: arbitrumSepolia.id,
+    name: 'Arbitrum Sepolia',
+    logo: '/arbitrum-logo.png',
+    tokenSymbol: 'wUSDC',
+  },
+}
+
 export const directions: Record<'baseToArbitrum' | 'arbitrumToBase', BridgeDirection> = {
   baseToArbitrum: {
     originChainId: baseSepolia.id,

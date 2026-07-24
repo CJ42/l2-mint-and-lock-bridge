@@ -1,18 +1,26 @@
 import '@rainbow-me/rainbowkit/styles.css'
 import './globals.css'
 import type { Metadata } from 'next'
+import { IBM_Plex_Mono } from 'next/font/google'
 import { type ReactNode } from 'react'
 
 import { Providers } from './providers'
 
+const ibmPlexMono = IBM_Plex_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-ibm-plex-mono',
+  display: 'swap',
+})
+
 export const metadata: Metadata = {
-  title: 'Mint & Lock Bridge',
-  description: 'Bridge USDC between Base Sepolia and Arbitrum Sepolia',
+  title: 'L2 Bridge',
+  description: 'Move tokens between Arbitrum and Base Sepolia',
 }
 
 export default function RootLayout(props: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className={ibmPlexMono.variable}>
       <body>
         <Providers>{props.children}</Providers>
       </body>

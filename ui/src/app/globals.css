@@ -1,19 +1,24 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0c0f12;
-  --panel: #14181c;
-  --surface: #101418;
-  --border: #293036;
-  --text: #f0f4f2;
-  --muted: #88938e;
-  --accent: #55e69d;
-  --accent-soft: rgb(85 230 157 / 10%);
-  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  color: var(--text);
-  color-scheme: dark;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", sans-serif;
+  --white: #ffffff;
+  --blue: #181ea9;
+  --blue-strong: #12178a;
+  --blue-soft: rgb(24 30 169 / 6%);
+  --blue-line: rgb(24 30 169 / 24%);
+  --orange: #e5673f;
+  --orange-soft: rgb(229 103 63 / 10%);
+  --ink: #101014;
+  --muted: #6b6b78;
+  --border: #e3e3e8;
+  --surface: #fafafb;
+  --danger: #c8102e;
+  --radius: 4px;
+  --font-plex: var(--font-ibm-plex-mono), ui-monospace, "SFMono-Regular",
+    Consolas, "Liberation Mono", monospace;
+  color: var(--ink);
+  color-scheme: light;
+  font-family: var(--font-plex);
   font-synthesis: none;
   font-weight: 400;
   line-height: 1.5;
@@ -29,15 +34,13 @@
 
 html {
   min-width: 320px;
-  background: var(--background);
+  background: var(--white);
 }
 
 body {
   min-height: 100vh;
   margin: 0;
-  background:
-    radial-gradient(circle at 50% 12%, rgb(85 230 157 / 6%), transparent 28rem),
-    var(--background);
+  background: var(--white);
 }
 
 button,
@@ -48,6 +51,10 @@ input {
 button:focus-visible,
 input:focus-visible,
 a:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--blue);
   outline-offset: 2px;
+}
+
+[data-rk] {
+  --rk-fonts-body: var(--font-plex);
 }
