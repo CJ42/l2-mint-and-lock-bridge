@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.24;
 
+// globals
+import "../src/Types.sol" as Types;
+
 import {Test} from "forge-std/Test.sol";
 import {ERC20} from "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
@@ -77,9 +80,9 @@ abstract contract TestSetup is Test {
 
     function baseToArbitrumMessage(
         uint256 nonce
-    ) internal view returns (BridgeBase.BridgeMessage memory) {
+    ) internal view returns (Types.BridgeMessage memory) {
         return
-            BridgeBase.BridgeMessage({
+            Types.BridgeMessage({
                 originChainId: BASE_CHAIN_ID,
                 destinationChainId: ARBITRUM_CHAIN_ID,
                 token: address(usdc),
@@ -92,9 +95,9 @@ abstract contract TestSetup is Test {
 
     function arbitrumToBaseMessage(
         uint256 nonce
-    ) internal view returns (BridgeBase.BridgeMessage memory) {
+    ) internal view returns (Types.BridgeMessage memory) {
         return
-            BridgeBase.BridgeMessage({
+            Types.BridgeMessage({
                 originChainId: ARBITRUM_CHAIN_ID,
                 destinationChainId: BASE_CHAIN_ID,
                 token: address(usdc),

@@ -1,10 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.27;
 
+// globals
+import "./Errors.sol" as Errors;
+import "./Types.sol" as Types;
+import "./BridgeLib.sol" as BridgeLib;
+
+// modules
 import {BridgeBase} from "./BridgeBase.sol";
 import {WrappedToken} from "./WrappedToken.sol";
 
-import "./Errors.sol" as Errors;
+// libraries
+using {BridgeLib.computeBridgeMessageId} for Types.BridgeMessage;
 
 //             ..                                       ..
 //             []                                       []
@@ -34,7 +41,7 @@ contract SyntheticTokenBridge is BridgeBase {
         require(
             address(wrappedToken_) != address(0) &&
                 canonicalToken_ != address(0),
-            Errors.TokeCannotBeZeroAddress()
+            Errors.TokenCannotBeZeroAddress()
         );
         wrappedToken = wrappedToken_;
         CANONICAL_TOKEN = canonicalToken_;
@@ -43,7 +50,7 @@ contract SyntheticTokenBridge is BridgeBase {
 
     /// @notice Mints wrapped USDC after a canonical USDC lock.
     function mint(
-        BridgeMessage calldata message
+        Types.BridgeMessage calldata message
     ) external onlyRelayer whenNotPaused {
         bytes32 id = _consumeMessage(message);
 
@@ -56,7 +63,7 @@ contract SyntheticTokenBridge is BridgeBase {
         _validateInputs(recipient, amount);
 
         uint256 nonce = nonces[msg.sender]++;
-        BridgeMessage memory message = BridgeMessage({
+        Types.BridgeMessage memory message = Types.BridgeMessage({
             originChainId: block.chainid,
             destinationChainId: DESTINATION_CHAIN_ID,
             token: CANONICAL_TOKEN,
@@ -65,11 +72,10 @@ contract SyntheticTokenBridge is BridgeBase {
             amount: amount,
             nonce: nonce
         });
-        bytes32 id = messageId(message);
+        bytes32 messageId = message.computeBridgeMessageId();
 
-        wrappedToken.burnFrom(msg.sender, amount);
         emit BridgeInitiated(
-            id,
+            messageId,
             msg.sender,
             recipient,
             amount,
@@ -77,5 +83,7 @@ contract SyntheticTokenBridge is BridgeBase {
             block.chainid,
             DESTINATION_CHAIN_ID
         );
+
+        wrappedToken.burnFrom(msg.sender, amount);
     }
 }

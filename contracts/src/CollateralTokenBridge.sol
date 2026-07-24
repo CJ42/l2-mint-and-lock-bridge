@@ -1,12 +1,21 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.27;
 
-import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+// globals
+import "./Errors.sol" as Errors;
+import "./Types.sol" as Types;
+import "./BridgeLib.sol" as BridgeLib;
 
+// interfaces
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+
+// modules
 import {BridgeBase} from "./BridgeBase.sol";
 
-import "./Errors.sol" as Errors;
+// libraries
+import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+
+using {BridgeLib.computeBridgeMessageId} for Types.BridgeMessage;
 
 //             ..                                       ..
 //             []                                       []
@@ -46,7 +55,7 @@ contract CollateralTokenBridge is BridgeBase {
         _validateInputs(recipient, amount);
 
         uint256 nonce = nonces[msg.sender]++;
-        BridgeMessage memory message = BridgeMessage({
+        Types.BridgeMessage memory message = Types.BridgeMessage({
             originChainId: block.chainid,
             destinationChainId: DESTINATION_CHAIN_ID,
             token: address(TOKEN),
@@ -55,11 +64,11 @@ contract CollateralTokenBridge is BridgeBase {
             amount: amount,
             nonce: nonce
         });
-        bytes32 id = messageId(message);
+        bytes32 messageId = message.computeBridgeMessageId();
 
-        TOKEN.safeTransferFrom(msg.sender, address(this), amount);
+        // events are state changing operations and must be emitted before any external calls
         emit BridgeInitiated(
-            id,
+            messageId,
             msg.sender,
             recipient,
             amount,
@@ -67,15 +76,17 @@ contract CollateralTokenBridge is BridgeBase {
             block.chainid,
             DESTINATION_CHAIN_ID
         );
+
+        TOKEN.safeTransferFrom(msg.sender, address(this), amount);
     }
 
     /// @notice Unlocks canonical TOKEN after a destination-chain burn.
     function unlock(
-        BridgeMessage calldata message
+        Types.BridgeMessage calldata message
     ) external onlyRelayer whenNotPaused {
-        bytes32 id = _consumeMessage(message);
+        bytes32 messageId = _consumeMessage(message);
 
+        emit BridgeFinalized(messageId, message.recipient, message.amount);
         TOKEN.safeTransfer(message.recipient, message.amount);
-        emit BridgeFinalized(id, message.recipient, message.amount);
     }
 }

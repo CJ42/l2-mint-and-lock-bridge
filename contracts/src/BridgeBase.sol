@@ -1,42 +1,22 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.27;
 
+// globals
+import "./Types.sol" as Types;
+import "./Errors.sol" as Errors;
+import "./BridgeLib.sol" as BridgeLib;
+
+// interfaces
+import {IBridge} from "./IBridge.sol";
+
+// modules
 import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {Ownable2Step} from "openzeppelin-contracts/contracts/access/Ownable2Step.sol";
 import {Pausable} from "openzeppelin-contracts/contracts/utils/Pausable.sol";
 
-import "./Errors.sol" as Errors;
+using {BridgeLib.computeBridgeMessageId} for Types.BridgeMessage;
 
-abstract contract BridgeBase is Ownable2Step, Pausable {
-    struct BridgeMessage {
-        uint256 originChainId;
-        uint256 destinationChainId;
-        address token;
-        address sender;
-        address recipient;
-        uint256 amount;
-        uint256 nonce;
-    }
-
-    event BridgeInitiated(
-        bytes32 indexed messageId,
-        address indexed sender,
-        address indexed recipient,
-        uint256 amount,
-        uint256 nonce,
-        uint256 originChainId,
-        uint256 destinationChainId
-    );
-    event BridgeFinalized(
-        bytes32 indexed messageId,
-        address indexed recipient,
-        uint256 amount
-    );
-    event RelayerUpdated(
-        address indexed previousRelayer,
-        address indexed newRelayer
-    );
-
+abstract contract BridgeBase is IBridge, Ownable2Step, Pausable {
     address public relayer;
     mapping(address sender => uint256 nonce) public nonces;
     mapping(bytes32 messageId_ => bool isProcessed) public processed;
@@ -49,24 +29,6 @@ abstract contract BridgeBase is Ownable2Step, Pausable {
             Errors.NotRelayer({invalidAddress: msg.sender})
         );
         _;
-    }
-
-    /// @notice Computes the canonical identifier for a bridge message.
-    function computeBridgeMessageId(
-        BridgeMessage memory message
-    ) public pure returns (bytes32) {
-        return
-            keccak256(
-                abi.encode(
-                    message.originChainId,
-                    message.destinationChainId,
-                    message.token,
-                    message.sender,
-                    message.recipient,
-                    message.amount,
-                    message.nonce
-                )
-            );
     }
 
     /// @notice Updates the trusted relayer account.
@@ -99,7 +61,7 @@ abstract contract BridgeBase is Ownable2Step, Pausable {
     }
 
     function _consumeMessage(
-        BridgeMessage calldata message
+        Types.BridgeMessage calldata message
     ) internal returns (bytes32 messageId) {
         require(
             message.destinationChainId == block.chainid,
@@ -109,7 +71,7 @@ abstract contract BridgeBase is Ownable2Step, Pausable {
             })
         );
 
-        messageId = computeBridgeMessageId(message);
+        messageId = message.computeBridgeMessageId();
         require(
             !processed[messageId],
             Errors.BridgeMessageAlreadyProcessed(messageId)
