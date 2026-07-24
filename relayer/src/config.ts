@@ -1,4 +1,11 @@
-import { getAddress, type Address, type Hex } from "viem"
+import {
+  fallback,
+  getAddress,
+  http,
+  type Address,
+  type Hex,
+  type Transport,
+} from "viem"
 import { arbitrumSepolia, baseSepolia } from "viem/chains"
 import deploymentAddresses from "../../addresses.json"
 
@@ -8,7 +15,7 @@ export type ChainKey = (typeof chainKeys)[number]
 export type Direction = "base-to-arbitrum" | "arbitrum-to-base"
 
 export interface RelayerConfig {
-  rpcUrls: Record<ChainKey, string>
+  rpcTransports: Record<ChainKey, Transport>
   bridgeAddresses: Record<ChainKey, Address>
   deployBlocks: Record<ChainKey, bigint>
   relayerPrivateKey: Hex
@@ -22,13 +29,26 @@ export const chains = {
   arbitrumSepolia,
 } as const
 
-export const canonicalUsdcAddress = getAddress(deploymentAddresses.baseSepolia.usdc)
+const drpcUrls: Record<ChainKey, string> = {
+  baseSepolia: "https://base-sepolia.drpc.org",
+  arbitrumSepolia: "https://arbitrum-sepolia.drpc.org",
+}
+
+export const canonicalUsdcAddress = getAddress(
+  deploymentAddresses.baseSepolia.usdc,
+)
 
 export function loadConfig(env: Record<string, string | undefined> = Bun.env): RelayerConfig {
   return {
-    rpcUrls: {
-      baseSepolia: getRequiredEnv({ env, name: "BASE_SEPOLIA_RPC_URL" }),
-      arbitrumSepolia: getRequiredEnv({ env, name: "ARBITRUM_SEPOLIA_RPC_URL" }),
+    rpcTransports: {
+      baseSepolia: fallback([
+        http(chains.baseSepolia.rpcUrls.default.http[0]),
+        http(drpcUrls.baseSepolia),
+      ]),
+      arbitrumSepolia: fallback([
+        http(chains.arbitrumSepolia.rpcUrls.default.http[0]),
+        http(drpcUrls.arbitrumSepolia),
+      ]),
     },
     bridgeAddresses: {
       baseSepolia: getConfiguredAddress({

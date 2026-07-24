@@ -1,4 +1,5 @@
 import { getDefaultConfig } from '@rainbow-me/rainbowkit'
+import { fallback } from "viem";
 import { cookieStorage, createStorage, http } from 'wagmi'
 import { arbitrumSepolia, baseSepolia } from 'wagmi/chains'
 
@@ -13,8 +14,11 @@ export function getConfig() {
     chains: [baseSepolia, arbitrumSepolia],
     ssr: true,
     transports: {
-      [baseSepolia.id]: http(rpcUrls.base),
-      [arbitrumSepolia.id]: http(rpcUrls.arbitrum),
+      [baseSepolia.id]: fallback([http(rpcUrls.baseSepolia.default), http(rpcUrls.baseSepolia.fallback)]),
+      [arbitrumSepolia.id]: fallback([
+        http(rpcUrls.arbitrumSepolia.default),
+        http(rpcUrls.arbitrumSepolia.fallback)
+      ])
     },
   })
 }

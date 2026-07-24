@@ -1,8 +1,4 @@
-import {
-  createPublicClient,
-  createWalletClient,
-  http,
-} from "viem"
+import { createPublicClient, createWalletClient } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
 import { bridgeAbi, bridgeInitiatedEvent } from "./abi"
 import {
@@ -26,21 +22,21 @@ export async function main(): Promise<void> {
 
   const basePublicClient = createPublicClient({
     chain: chains.baseSepolia,
-    transport: http(config.rpcUrls.baseSepolia),
+    transport: config.rpcTransports.baseSepolia,
   })
   const arbitrumPublicClient = createPublicClient({
     chain: chains.arbitrumSepolia,
-    transport: http(config.rpcUrls.arbitrumSepolia),
+    transport: config.rpcTransports.arbitrumSepolia,
   })
   const baseWalletClient = createWalletClient({
     account,
     chain: chains.baseSepolia,
-    transport: http(config.rpcUrls.baseSepolia),
+    transport: config.rpcTransports.baseSepolia,
   })
   const arbitrumWalletClient = createWalletClient({
     account,
     chain: chains.arbitrumSepolia,
-    transport: http(config.rpcUrls.arbitrumSepolia),
+    transport: config.rpcTransports.arbitrumSepolia,
   })
   const state = await createStateStore({
     path: config.stateFile,
