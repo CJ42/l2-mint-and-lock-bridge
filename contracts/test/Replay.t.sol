@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.24;
 
 import {BridgeBase} from "../src/BridgeBase.sol";
@@ -37,7 +37,11 @@ contract ReplayTest is TestSetup {
         vm.chainId(BASE_CHAIN_ID);
 
         vm.expectRevert(
-            abi.encodeWithSelector(Errors.InvalidDestinationChainId.selector, BASE_CHAIN_ID, ARBITRUM_CHAIN_ID)
+            abi.encodeWithSelector(
+                Errors.InvalidDestinationChainId.selector,
+                BASE_CHAIN_ID,
+                ARBITRUM_CHAIN_ID
+            )
         );
         vm.prank(relayer);
         syntheticBridge.mint(baseToArbitrumMessage(0));
@@ -47,7 +51,11 @@ contract ReplayTest is TestSetup {
         vm.chainId(ARBITRUM_CHAIN_ID);
 
         vm.expectRevert(
-            abi.encodeWithSelector(Errors.InvalidDestinationChainId.selector, ARBITRUM_CHAIN_ID, BASE_CHAIN_ID)
+            abi.encodeWithSelector(
+                Errors.InvalidDestinationChainId.selector,
+                ARBITRUM_CHAIN_ID,
+                BASE_CHAIN_ID
+            )
         );
         vm.prank(relayer);
         collateralBridge.unlock(arbitrumToBaseMessage(0));

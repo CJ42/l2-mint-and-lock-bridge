@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.27;
 
 import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
@@ -27,8 +27,15 @@ abstract contract BridgeBase is Ownable2Step, Pausable {
         uint256 originChainId,
         uint256 destinationChainId
     );
-    event BridgeFinalized(bytes32 indexed messageId, address indexed recipient, uint256 amount);
-    event RelayerUpdated(address indexed previousRelayer, address indexed newRelayer);
+    event BridgeFinalized(
+        bytes32 indexed messageId,
+        address indexed recipient,
+        uint256 amount
+    );
+    event RelayerUpdated(
+        address indexed previousRelayer,
+        address indexed newRelayer
+    );
 
     address public relayer;
     mapping(address sender => uint256 nonce) public nonces;
@@ -37,23 +44,29 @@ abstract contract BridgeBase is Ownable2Step, Pausable {
     constructor(address owner_) Ownable(owner_) {}
 
     modifier onlyRelayer() {
-        require(msg.sender == relayer, Errors.NotRelayer({invalidAddress: msg.sender}));
+        require(
+            msg.sender == relayer,
+            Errors.NotRelayer({invalidAddress: msg.sender})
+        );
         _;
     }
 
     /// @notice Computes the canonical identifier for a bridge message.
-    function computeBridgeMessageId(BridgeMessage memory message) public pure returns (bytes32) {
-        return keccak256(
-            abi.encode(
-                message.originChainId,
-                message.destinationChainId,
-                message.token,
-                message.sender,
-                message.recipient,
-                message.amount,
-                message.nonce
-            )
-        );
+    function computeBridgeMessageId(
+        BridgeMessage memory message
+    ) public pure returns (bytes32) {
+        return
+            keccak256(
+                abi.encode(
+                    message.originChainId,
+                    message.destinationChainId,
+                    message.token,
+                    message.sender,
+                    message.recipient,
+                    message.amount,
+                    message.nonce
+                )
+            );
     }
 
     /// @notice Updates the trusted relayer account.
@@ -78,20 +91,29 @@ abstract contract BridgeBase is Ownable2Step, Pausable {
     function _validateInputs(address recipient, uint256 amount) internal pure {
         require(
             recipient != address(0) && amount != 0,
-            Errors.InvalidBridgeTxInputs({invalidRecipient: recipient, invalidAmount: amount})
+            Errors.InvalidBridgeTxInputs({
+                invalidRecipient: recipient,
+                invalidAmount: amount
+            })
         );
     }
 
-    function _consumeMessage(BridgeMessage calldata message) internal returns (bytes32 messageId) {
+    function _consumeMessage(
+        BridgeMessage calldata message
+    ) internal returns (bytes32 messageId) {
         require(
             message.destinationChainId == block.chainid,
             Errors.InvalidDestinationChainId({
-                expectedChainId: block.chainid, receivedChainId: message.destinationChainId
+                expectedChainId: block.chainid,
+                receivedChainId: message.destinationChainId
             })
         );
 
         messageId = computeBridgeMessageId(message);
-        require(!processed[messageId], Errors.BridgeMessageAlreadyProcessed(messageId));
+        require(
+            !processed[messageId],
+            Errors.BridgeMessageAlreadyProcessed(messageId)
+        );
 
         // TODO(signature-verification): Production finalization would verify an EIP-712
         // signature over id against a rotatable relayer key set or n-of-m attestation.

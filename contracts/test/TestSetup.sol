@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
@@ -41,12 +41,29 @@ abstract contract TestSetup is Test {
         usdc = new MockUSDC();
 
         uint64 currentNonce = vm.getNonce(address(this));
-        address predictedSyntheticBridge = vm.computeCreateAddress(address(this), uint256(currentNonce) + 1);
-        wusdc = new WrappedToken(predictedSyntheticBridge, "Wrapped USDC", "wUSDC", 6);
-        syntheticBridge = new SyntheticTokenBridge(bridgeAdmin, wusdc, address(usdc), BASE_CHAIN_ID);
+        address predictedSyntheticBridge = vm.computeCreateAddress(
+            address(this),
+            uint256(currentNonce) + 1
+        );
+        wusdc = new WrappedToken(
+            predictedSyntheticBridge,
+            "Wrapped USDC",
+            "wUSDC",
+            6
+        );
+        syntheticBridge = new SyntheticTokenBridge(
+            bridgeAdmin,
+            wusdc,
+            address(usdc),
+            BASE_CHAIN_ID
+        );
         assertEq(address(syntheticBridge), predictedSyntheticBridge);
 
-        collateralBridge = new CollateralTokenBridge(bridgeAdmin, usdc, ARBITRUM_CHAIN_ID);
+        collateralBridge = new CollateralTokenBridge(
+            bridgeAdmin,
+            usdc,
+            ARBITRUM_CHAIN_ID
+        );
 
         vm.startPrank(bridgeAdmin);
         collateralBridge.setRelayer(relayer);
@@ -58,27 +75,33 @@ abstract contract TestSetup is Test {
         usdc.mint(address(collateralBridge), 100e6);
     }
 
-    function baseToArbitrumMessage(uint256 nonce) internal view returns (BridgeBase.BridgeMessage memory) {
-        return BridgeBase.BridgeMessage({
-            originChainId: BASE_CHAIN_ID,
-            destinationChainId: ARBITRUM_CHAIN_ID,
-            token: address(usdc),
-            sender: user,
-            recipient: recipient,
-            amount: AMOUNT,
-            nonce: nonce
-        });
+    function baseToArbitrumMessage(
+        uint256 nonce
+    ) internal view returns (BridgeBase.BridgeMessage memory) {
+        return
+            BridgeBase.BridgeMessage({
+                originChainId: BASE_CHAIN_ID,
+                destinationChainId: ARBITRUM_CHAIN_ID,
+                token: address(usdc),
+                sender: user,
+                recipient: recipient,
+                amount: AMOUNT,
+                nonce: nonce
+            });
     }
 
-    function arbitrumToBaseMessage(uint256 nonce) internal view returns (BridgeBase.BridgeMessage memory) {
-        return BridgeBase.BridgeMessage({
-            originChainId: ARBITRUM_CHAIN_ID,
-            destinationChainId: BASE_CHAIN_ID,
-            token: address(usdc),
-            sender: user,
-            recipient: recipient,
-            amount: AMOUNT,
-            nonce: nonce
-        });
+    function arbitrumToBaseMessage(
+        uint256 nonce
+    ) internal view returns (BridgeBase.BridgeMessage memory) {
+        return
+            BridgeBase.BridgeMessage({
+                originChainId: ARBITRUM_CHAIN_ID,
+                destinationChainId: BASE_CHAIN_ID,
+                token: address(usdc),
+                sender: user,
+                recipient: recipient,
+                amount: AMOUNT,
+                nonce: nonce
+            });
     }
 }

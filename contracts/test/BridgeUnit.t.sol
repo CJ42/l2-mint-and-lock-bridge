@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.24;
 
 import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
@@ -17,7 +17,11 @@ contract BridgeUnitTest is TestSetup {
         uint256 originChainId,
         uint256 destinationChainId
     );
-    event BridgeFinalized(bytes32 indexed messageId, address indexed recipient, uint256 amount);
+    event BridgeFinalized(
+        bytes32 indexed messageId,
+        address indexed recipient,
+        uint256 amount
+    );
 
     function testMessageIdSeparatesChainPairs() public view {
         BridgeBase.BridgeMessage memory first = baseToArbitrumMessage(0);
@@ -25,7 +29,10 @@ contract BridgeUnitTest is TestSetup {
         second.originChainId = ARBITRUM_CHAIN_ID;
         second.destinationChainId = BASE_CHAIN_ID;
 
-        assertNotEq(collateralBridge.messageId(first), collateralBridge.messageId(second));
+        assertNotEq(
+            collateralBridge.messageId(first),
+            collateralBridge.messageId(second)
+        );
     }
 
     function testMessageIdSeparatesNonces() public view {
@@ -33,7 +40,10 @@ contract BridgeUnitTest is TestSetup {
         BridgeBase.BridgeMessage memory second = baseToArbitrumMessage(0);
         second.nonce = 1;
 
-        assertNotEq(collateralBridge.messageId(first), collateralBridge.messageId(second));
+        assertNotEq(
+            collateralBridge.messageId(first),
+            collateralBridge.messageId(second)
+        );
     }
 
     function testMessageIdUsesCanonicalAbiEncoding() public view {
@@ -61,7 +71,15 @@ contract BridgeUnitTest is TestSetup {
         BridgeBase.BridgeMessage memory message = baseToArbitrumMessage(0);
         bytes32 id = collateralBridge.messageId(message);
         vm.expectEmit(true, true, true, true);
-        emit BridgeInitiated(id, user, recipient, AMOUNT, 0, BASE_CHAIN_ID, ARBITRUM_CHAIN_ID);
+        emit BridgeInitiated(
+            id,
+            user,
+            recipient,
+            AMOUNT,
+            0,
+            BASE_CHAIN_ID,
+            ARBITRUM_CHAIN_ID
+        );
         collateralBridge.lock(recipient, AMOUNT);
         vm.stopPrank();
 
@@ -94,7 +112,15 @@ contract BridgeUnitTest is TestSetup {
         });
         bytes32 burnId = syntheticBridge.messageId(burnMessage);
         vm.expectEmit(true, true, true, true);
-        emit BridgeInitiated(burnId, recipient, user, AMOUNT, 0, ARBITRUM_CHAIN_ID, BASE_CHAIN_ID);
+        emit BridgeInitiated(
+            burnId,
+            recipient,
+            user,
+            AMOUNT,
+            0,
+            ARBITRUM_CHAIN_ID,
+            BASE_CHAIN_ID
+        );
         syntheticBridge.burn(user, AMOUNT);
         vm.stopPrank();
 
@@ -158,7 +184,12 @@ contract BridgeUnitTest is TestSetup {
         assertEq(collateralBridge.owner(), nextOwner);
         assertEq(collateralBridge.relayer(), nextRelayer);
 
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Ownable.OwnableUnauthorizedAccount.selector,
+                address(this)
+            )
+        );
         collateralBridge.pause();
     }
 
