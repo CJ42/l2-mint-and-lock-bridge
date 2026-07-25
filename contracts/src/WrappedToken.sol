@@ -44,13 +44,13 @@ contract WrappedToken is ERC20, ERC20Burnable {
     function burnFrom(
         address account,
         uint256 amount
-    ) external override onlyBridge {
+    ) public override onlyBridge {
         super.burnFrom(account, amount);
     }
 
     /// @notice Mirrors canonical token precision when the wrapped token was deployed and configured
     /// (e.g: USDC has 6 decimals, WBTC has 8 decimals, etc...).
-    function decimals() external view override returns (uint8) {
+    function decimals() public view override returns (uint8) {
         return _DECIMALS;
     }
 
