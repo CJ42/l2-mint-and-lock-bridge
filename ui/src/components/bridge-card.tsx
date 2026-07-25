@@ -25,6 +25,7 @@ export function BridgeCard({ flow }: BridgeCardProps) {
     flowState,
     directionKey,
     amountInput,
+    amountError,
     recipientInput,
     recipientError,
     originBalance,
@@ -44,7 +45,7 @@ export function BridgeCard({ flow }: BridgeCardProps) {
   const destinationChain = isBaseOrigin ? chains.arbitrum : chains.base
   const isConnected =
     flowState.phase !== 'blocked' || flowState.reason !== 'disconnected'
-  const action = resolveAction({ flowState, explorerUrl })
+  const action = resolveAction({ flowState, explorerUrl, amountError })
 
   return (
     <section className={styles.card} aria-labelledby="bridge-heading">
@@ -89,12 +90,20 @@ export function BridgeCard({ flow }: BridgeCardProps) {
             Max
           </button>
         </div>
-        <div className={styles.inputShell}>
+        <div
+          className={
+            amountError
+              ? `${styles.inputShell} ${styles.inputShellInvalid}`
+              : styles.inputShell
+          }
+        >
           <input
             id="amount"
             className={styles.amountInput}
             inputMode="decimal"
             placeholder="0.00"
+            aria-invalid={Boolean(amountError)}
+            aria-describedby={amountError ? 'amount-error' : undefined}
             value={amountInput}
             onChange={(event) => setAmountInput(event.target.value)}
           />
@@ -103,6 +112,11 @@ export function BridgeCard({ flow }: BridgeCardProps) {
             {direction.tokenSymbol}
           </span>
         </div>
+        {amountError && (
+          <p id="amount-error" className={styles.error}>
+            {amountError}
+          </p>
+        )}
       </div>
 
       <div className={styles.field}>
@@ -233,9 +247,11 @@ function ChainPanel({
 function resolveAction({
   flowState,
   explorerUrl,
+  amountError,
 }: {
   flowState: BridgeFlowState
   explorerUrl?: string
+  amountError: string | null
 }): {
   label: string
   isDisabled: boolean
@@ -273,7 +289,7 @@ function resolveAction({
         }
       case 'invalid-amount':
         return {
-          label: 'Enter an amount',
+          label: amountError ? 'Insufficient balance' : 'Enter an amount',
           isDisabled: true,
           showSpinner: false,
         }

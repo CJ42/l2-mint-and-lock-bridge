@@ -65,6 +65,7 @@ export interface UseBridgeFlowResult {
   flowState: BridgeFlowState
   directionKey: keyof typeof directions
   amountInput: string
+  amountError: string | null
   recipientInput: string
   recipientError: string | null
   originBalance?: bigint
@@ -134,6 +135,12 @@ export function useBridgeFlow({
   const originBalance = isBaseOrigin ? baseBalance : arbitrumBalance
   const destinationBalance = isBaseOrigin ? arbitrumBalance : baseBalance
   const balance = originBalance ?? 0n
+  const amountError =
+    amount !== undefined &&
+    originBalance !== undefined &&
+    amount > originBalance
+      ? 'Amount exceeds your available balance.'
+      : null
 
   const activeMessage = messages.find(
     (message) =>
@@ -146,7 +153,7 @@ export function useBridgeFlow({
     isDeployed: isBridgeDeployed,
     isCorrectChain: chainId === direction.originChainId,
     isSwitchingChain,
-    hasValidAmount: Boolean(amount),
+    hasValidAmount: Boolean(amount) && !amountError,
     hasValidRecipient: Boolean(recipient),
     approve,
     bridge,
@@ -502,6 +509,7 @@ export function useBridgeFlow({
     flowState,
     directionKey,
     amountInput,
+    amountError,
     recipientInput,
     recipientError,
     originBalance,
