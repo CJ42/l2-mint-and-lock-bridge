@@ -16,13 +16,13 @@ Requirements for this milestone. Each maps to exactly one roadmap phase.
 ### Error Decoding
 
 - [x] **ERR-01**: A revert carrying a known bridge custom error is shown as a readable sentence that includes the error's evidence values (e.g. the `messageId` for `BridgeMessageAlreadyProcessed`)
-- [ ] **ERR-02**: Insufficient native gas is shown as an actionable message naming the chain, the approximate amount needed, and a faucet link
-- [ ] **ERR-03**: Insufficient allowance is shown as a message directing the user to re-run approve
-- [ ] **ERR-04**: An ERC20-originated revert (e.g. `SafeERC20FailedOperation`) decodes correctly rather than falling through as unknown
-- [ ] **ERR-05**: A wallet rejection is reported as a rejection, distinct from an on-chain failure
-- [ ] **ERR-06**: An out-of-gas failure, which carries empty revert data and cannot be decoded, produces a specific message rather than a generic one
-- [ ] **ERR-07**: A Solidity `Panic(uint256)` revert is decoded to its documented meaning
-- [ ] **ERR-08**: An unrecognised revert falls through to a generic message that still exposes the raw revert data for debugging
+- [x] **ERR-02**: Insufficient native gas is shown as an actionable message naming the chain, the approximate amount needed, and a faucet link
+- [x] **ERR-03**: Insufficient allowance is shown as a message directing the user to re-run approve
+- [x] **ERR-04**: An ERC20-originated revert (e.g. `SafeERC20FailedOperation`) decodes correctly rather than falling through as unknown
+- [x] **ERR-05**: A wallet rejection is reported as a rejection, distinct from an on-chain failure
+- [x] **ERR-06**: An out-of-gas failure, which carries empty revert data and cannot be decoded, produces a specific message rather than a generic one
+- [x] **ERR-07**: A Solidity `Panic(uint256)` revert is decoded to its documented meaning
+- [x] **ERR-08**: An unrecognised revert falls through to a generic message that still exposes the raw revert data for debugging
 - [x] **ERR-09**: The error-mapping layer is a single module documented in-code as intentionally narrow and extensible
 
 ### Pre-flight Simulation
@@ -104,13 +104,13 @@ Which phases cover which requirements. Populated during roadmap creation.
 | ABI-02 | Phase 1 | Complete |
 | ABI-03 | Phase 1 | Complete |
 | ERR-01 | Phase 1 | Complete |
-| ERR-02 | Phase 1 | Pending |
-| ERR-03 | Phase 1 | Pending |
-| ERR-04 | Phase 1 | Pending |
-| ERR-05 | Phase 1 | Pending |
-| ERR-06 | Phase 1 | Pending |
-| ERR-07 | Phase 1 | Pending |
-| ERR-08 | Phase 1 | Pending |
+| ERR-02 | Phase 1 | Complete |
+| ERR-03 | Phase 1 | Complete |
+| ERR-04 | Phase 1 | Complete |
+| ERR-05 | Phase 1 | Complete |
+| ERR-06 | Phase 1 | Complete |
+| ERR-07 | Phase 1 | Complete |
+| ERR-08 | Phase 1 | Complete |
 | ERR-09 | Phase 1 | Complete |
 | FLOW-01 | Phase 1 | Pending |
 | FLOW-05 | Phase 1 | Pending |
