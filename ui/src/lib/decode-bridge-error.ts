@@ -10,8 +10,19 @@
  * decode chain is meant to stay legible as a single file.
  */
 
-import { toFunctionSelector, type Abi, type Address, type Hex } from 'viem'
-import { BaseError, ContractFunctionRevertedError } from 'viem'
+import {
+  BaseError,
+  ContractFunctionRevertedError,
+  InsufficientFundsError,
+  UserRejectedRequestError,
+  formatEther,
+  parseGwei,
+  size,
+  toFunctionSelector,
+  type Abi,
+  type Address,
+  type Hex,
+} from 'viem'
 import { formatAbiItem } from 'viem/utils'
 
 import {
@@ -20,7 +31,7 @@ import {
   syntheticTokenBridgeAbi,
   wrappedTokenAbi,
 } from './generated'
-import { formatTokenAmount } from './bridge'
+import { chains, formatTokenAmount } from './bridge'
 
 export type DecodedBridgeErrorKind =
   | 'bridge-custom-error'
@@ -85,6 +96,8 @@ function buildBridgeErrorAbi(): Abi {
 interface DecodeContext {
   error: unknown
   reverted?: ContractFunctionRevertedError
+  chainId?: number
+  gasEstimate?: { gas: bigint; feePerGas: bigint }
 }
 
 type Decoder = (context: DecodeContext) => DecodedBridgeError | undefined
@@ -94,11 +107,20 @@ type Decoder = (context: DecodeContext) => DecodedBridgeError | undefined
  * this list and returns the first match — the terminal branch is total, so a value always comes
  * back and the function never throws.
  *
- * Order is load-bearing: `Panic`/`Error` (viem appends both fragments to every ABI automatically
- * — they are not bridge errors) must be classified before the Tier-1/Tier-2 custom-error tiering,
- * and the Tier-1 named branch must win over the Tier-2 catch-all.
+ * Order is load-bearing:
+ * - `decodeWalletRejection` is FIRST — a wallet rejection is not an on-chain failure and must
+ *   never be misclassified as one.
+ * - `decodeEmptyRevertData` precedes every branch that reads decoded revert data — zero-length
+ *   revert data cannot be decoded at all (`decodeErrorResult` throws on it), so this must run
+ *   before `Panic`/`Error`/the custom-error tiering, not after.
+ * - `Panic`/`Error` (viem appends both fragments to every ABI automatically — they are not
+ *   bridge errors) must be classified before the Tier-1/Tier-2 custom-error tiering.
+ * - The Tier-1 named branch must win over the Tier-2 catch-all.
  */
 const decoders: Decoder[] = [
+  decodeWalletRejection,
+  decodeEmptyRevertData,
+  decodeInsufficientGas,
   decodePanic,
   decodeRevertString,
   decodeBridgeCustomError,
@@ -107,10 +129,14 @@ const decoders: Decoder[] = [
 
 export function decodeBridgeError({
   error,
+  chainId,
+  gasEstimate,
 }: DecodeBridgeErrorInput): DecodedBridgeError {
   const context: DecodeContext = {
     error,
     reverted: findRevertedError(error),
+    chainId,
+    gasEstimate,
   }
 
   for (const decoder of decoders) {
@@ -130,6 +156,28 @@ function findRevertedError(
     (cause) => cause instanceof ContractFunctionRevertedError,
   )
   return reverted instanceof ContractFunctionRevertedError ? reverted : undefined
+}
+
+/**
+ * Walks an error's `.cause` chain generically (not gated on `instanceof BaseError`, since a
+ * wallet provider or wrapper library may attach a plain `.cause` without extending viem's class),
+ * collecting every level including the error itself, so a predicate can be tested against each.
+ */
+function walkChain(error: unknown): unknown[] {
+  const chain: unknown[] = []
+  const seen = new Set<unknown>()
+  let current: unknown = error
+
+  while (current !== undefined && current !== null && !seen.has(current)) {
+    chain.push(current)
+    seen.add(current)
+    current =
+      typeof current === 'object' && 'cause' in current
+        ? (current as { cause?: unknown }).cause
+        : undefined
+  }
+
+  return chain
 }
 
 /**
@@ -298,6 +346,221 @@ function decodeRevertString({ reverted }: DecodeContext): DecodedBridgeError | u
     kind: 'revert-string',
     message: `The transaction reverted: "${truncateRevertReason(reason)}".`,
   }
+}
+
+/**
+ * Wallet rejection — ERR-05. Placed FIRST in the chain: a rejection is not an on-chain failure
+ * and must never be misclassified as one. Primary signal is viem's typed `UserRejectedRequestError`
+ * (EIP-1193 code 4001). The numeric-code check is a deliberately narrow secondary, kept last
+ * within this decoder and documented here: some wallet providers wrap or strip viem's typed class
+ * before it reaches the app, so the EIP-1193 `code` alone is checked as a fallback signal — this
+ * is the one exception to STACK.md's "typed classes are strictly better" rule, and its real-world
+ * coverage against every wallet provider is unverified (flagged in the plan as an unresolved edge).
+ */
+function decodeWalletRejection({ error }: DecodeContext): DecodedBridgeError | undefined {
+  const chain = walkChain(error)
+
+  const isRejected = chain.some(
+    (value) =>
+      value instanceof UserRejectedRequestError ||
+      (typeof value === 'object' &&
+        value !== null &&
+        'code' in value &&
+        (value as { code?: unknown }).code === 4001),
+  )
+  if (!isRejected) return undefined
+
+  return {
+    kind: 'wallet-rejected',
+    message: 'You rejected the request in your wallet.',
+  }
+}
+
+/**
+ * Empty revert data — ERR-06. Precedes every branch that reads decoded data: zero-length revert
+ * data cannot be decoded at all (`decodeErrorResult` throws `AbiDecodingZeroDataError` on it), and
+ * in practice this means the transaction ran out of gas before it could produce a reason.
+ * Zero-byte-length is detected with viem's `size` semantics (after lowercasing) rather than a
+ * literal string comparison, so `undefined`, `'0x'` and `'0X'` all classify identically.
+ */
+function decodeEmptyRevertData({ reverted }: DecodeContext): DecodedBridgeError | undefined {
+  if (!reverted) return undefined
+  if (reverted.data) return undefined // decoded data exists — a more specific decoder handles it
+
+  if (hexByteLength(reverted.raw) > 0) return undefined // real, if unrecognised, revert data exists
+
+  return {
+    kind: 'out-of-gas',
+    message:
+      'The transaction reverted without returning any data, which in practice usually means it ran out of gas before it could produce a reason. Try increasing the gas limit and retrying.',
+  }
+}
+
+function hexByteLength(value: Hex | undefined): number {
+  if (!value) return 0
+  return size(value.toLowerCase() as Hex)
+}
+
+/**
+ * Faucet metadata by numeric chain id only (D-08) — never by comparing chain-name strings. These
+ * are Alchemy testnet faucets: 0.1 ETH/day, no signup required to claim, though they do check for
+ * some existing mainnet history on the requesting address to deter abuse — worth revisiting if
+ * that policy changes and the links need swapping.
+ */
+const GAS_FAUCETS: Record<number, { chainName: string; faucetUrl: string }> = {
+  84532: {
+    // Base Sepolia — matches `chains.base.id` in ./bridge
+    chainName: chains.base.name,
+    faucetUrl: 'https://www.alchemy.com/faucets/base-sepolia',
+  },
+  421614: {
+    // Arbitrum Sepolia — matches `chains.arbitrum.id` in ./bridge
+    chainName: chains.arbitrum.name,
+    faucetUrl: 'https://www.alchemy.com/faucets/arbitrum-sepolia',
+  },
+}
+
+const DEFAULT_GAS_SHORTFALL_ETH = '0.0004'
+
+/**
+ * Recovers `{ gas, feePerGas }` from the walked cause chain's `metaMessages` — the secondary,
+ * degraded source (D-07). Both `EstimateGasExecutionError` and `CallExecutionError` emit a
+ * `prettyPrint` block (`'Estimate Gas Arguments:'`/`'Raw Call Arguments:'`) whose lines are two
+ * leading spaces, the key, a colon, padding, then the value. A missing or unparseable line is
+ * treated as this source failing — never as a zero.
+ */
+function extractGasArgsFromChain(
+  error: unknown,
+): { gas: bigint; feePerGas: bigint } | undefined {
+  for (const level of walkChain(error)) {
+    if (!(level instanceof BaseError) || !level.metaMessages) continue
+
+    const parsed = parseGasArgsBlock(level.metaMessages)
+    if (parsed) return parsed
+  }
+  return undefined
+}
+
+function parseGasArgsBlock(
+  metaMessages: string[],
+): { gas: bigint; feePerGas: bigint } | undefined {
+  const headingIndex = metaMessages.findIndex(
+    (line) => line === 'Estimate Gas Arguments:' || line === 'Raw Call Arguments:',
+  )
+  if (headingIndex === -1) return undefined
+
+  const block = metaMessages[headingIndex + 1]
+  if (typeof block !== 'string') return undefined
+
+  let gas: bigint | undefined
+  let maxFeePerGasGwei: string | undefined
+  let gasPriceGwei: string | undefined
+
+  for (const line of block.split('\n')) {
+    const match = line.match(/^\s*([a-zA-Z]+):\s+(.+)$/)
+    if (!match) continue
+
+    const key = match[1]
+    const value = match[2]?.trim()
+    if (!value) continue
+
+    if (key === 'gas') {
+      try {
+        const parsedGas = BigInt(value)
+        if (parsedGas > 0n) gas = parsedGas
+      } catch {
+        // unparseable gas line — this source fails, never treated as zero
+      }
+    } else if (key === 'maxFeePerGas') {
+      maxFeePerGasGwei = value.replace(/\s*gwei$/, '')
+    } else if (key === 'gasPrice' && maxFeePerGasGwei === undefined) {
+      gasPriceGwei = value.replace(/\s*gwei$/, '')
+    }
+  }
+
+  const feeGwei = maxFeePerGasGwei ?? gasPriceGwei
+  if (gas === undefined || feeGwei === undefined) return undefined
+
+  try {
+    const feePerGas = parseGwei(feeGwei)
+    if (feePerGas <= 0n) return undefined
+    return { gas, feePerGas }
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * Renders a wei amount as an ETH string via `formatEther`, then rounds UP to 4 decimal places so
+ * the quoted amount is never below what the transaction actually needs. Rounding is done on the
+ * decimal string in bigint arithmetic rather than `Number`, to avoid floating-point imprecision.
+ */
+function ceilToFourDecimalsEth(wei: bigint): string {
+  const [wholePart, fractionPart = ''] = formatEther(wei).split('.')
+  const paddedFraction = fractionPart.padEnd(5, '0')
+  const keep = paddedFraction.slice(0, 4)
+  const remainder = paddedFraction.slice(4)
+
+  if (!/[1-9]/.test(remainder)) return `${wholePart}.${keep}`
+
+  const roundedUp = BigInt(wholePart) * 10_000n + BigInt(keep) + 1n
+  const wholeDigits = roundedUp / 10_000n
+  const fractionDigits = (roundedUp % 10_000n).toString().padStart(4, '0')
+  return `${wholeDigits}.${fractionDigits}`
+}
+
+/**
+ * The gas-shortfall computation (D-07, D-09) — kept in this module on purpose, following the
+ * `getRetryDelayMs`-style shape from `relayer/src/submitter.ts`: a standalone top-level function,
+ * called inline. Resolves from three ordered sources and reports whether the figure was genuinely
+ * computed or is the fixed default, so the caller can word the sentence accordingly (the
+ * `must_haves.prohibitions` entry on this plan forbids presenting a default as a measurement).
+ */
+function computeGasShortfall({
+  gasEstimate,
+  error,
+}: {
+  gasEstimate?: { gas: bigint; feePerGas: bigint }
+  error: unknown
+}): { amount: string; isComputed: boolean } {
+  const explicit =
+    gasEstimate && gasEstimate.gas > 0n && gasEstimate.feePerGas > 0n ? gasEstimate : undefined
+  const recovered = explicit ? undefined : extractGasArgsFromChain(error)
+  const source = explicit ?? recovered
+
+  if (!source) return { amount: DEFAULT_GAS_SHORTFALL_ETH, isComputed: false }
+
+  const weiCost = source.gas * source.feePerGas
+  return { amount: ceilToFourDecimalsEth(weiCost), isComputed: true }
+}
+
+/**
+ * Insufficient native gas — ERR-02, D-07, D-08. `InsufficientFundsError` never carries gas/fee
+ * fields itself (confirmed against the installed viem source — see the plan's
+ * `planner_flagged_decisions`); it only classifies the failure. The real figure comes from
+ * `computeGasShortfall`'s three ordered sources.
+ */
+function decodeInsufficientGas({
+  error,
+  chainId,
+  gasEstimate,
+}: DecodeContext): DecodedBridgeError | undefined {
+  const insufficientFunds = walkChain(error).find(
+    (value): value is InsufficientFundsError => value instanceof InsufficientFundsError,
+  )
+  if (!insufficientFunds) return undefined
+
+  const { amount, isComputed } = computeGasShortfall({ gasEstimate, error })
+  const faucet = chainId !== undefined ? GAS_FAUCETS[chainId] : undefined
+
+  const chainClause = faucet ? ` on ${faucet.chainName}` : ''
+  const faucetClause = faucet ? ` — here's the faucet: ${faucet.faucetUrl}` : ''
+
+  const message = isComputed
+    ? `You need ~${amount} ETH${chainClause} for gas${faucetClause}.`
+    : `You'll typically need around ${amount} ETH${chainClause} for gas${faucetClause}.`
+
+  return { kind: 'insufficient-gas', message }
 }
 
 /**

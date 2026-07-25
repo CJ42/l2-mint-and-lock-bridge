@@ -1,5 +1,13 @@
 import { describe, expect, test } from 'bun:test'
-import { ContractFunctionRevertedError, encodeErrorResult, zeroAddress, type Hex } from 'viem'
+import {
+  ContractFunctionRevertedError,
+  EstimateGasExecutionError,
+  InsufficientFundsError,
+  UserRejectedRequestError,
+  encodeErrorResult,
+  zeroAddress,
+  type Hex,
+} from 'viem'
 
 import { bridgeErrorAbi, decodeBridgeError } from './decode-bridge-error'
 
@@ -103,22 +111,12 @@ describe('decodeBridgeError', () => {
     expect(result.kind).toBe('unknown')
   })
 
-  test('returns unknown with a "no revert data" message for a ContractFunctionRevertedError carrying neither raw nor signature', () => {
-    // NOTE: Plan 01-02 Task 2 inserts a more specific empty-revert-data decoder ahead of this
-    // generic fallback, which reclassifies this exact fixture from 'unknown' to 'out-of-gas' —
-    // see the corresponding test in the "empty revert data" describe block added by Task 2.
-    const reverted = new ContractFunctionRevertedError({
-      abi: bridgeErrorAbi,
-      functionName: 'lock',
-    })
-
-    const result = decodeBridgeError({ error: reverted })
-
-    expect(result.kind).toBe('unknown')
-    expect(result.message).not.toContain('undefined')
-    expect(result.message).not.toContain('()')
-    expect(result.message.length).toBeGreaterThan(0)
-  })
+  // NOTE: a ContractFunctionRevertedError carrying neither raw nor signature (zero-length revert
+  // data) used to fall all the way through to this generic 'unknown' branch. The Task 2
+  // `decodeEmptyRevertData` decoder is more specific and now intercepts that exact fixture first,
+  // reclassifying it as 'out-of-gas' — see the "empty revert data" describe block below. The
+  // generic 'unknown' + "no revert data" message is still exercised above (undefined/plain
+  // Error/non-Error value), which is the one remaining path where `reverted` itself is absent.
 })
 
 describe('decodeBridgeError — Tier 1 bespoke copy', () => {
@@ -303,6 +301,175 @@ describe('decodeBridgeError — revert-string (Error(string))', () => {
   })
 })
 
+describe('decodeBridgeError — wallet rejection', () => {
+  test('a UserRejectedRequestError anywhere in the cause chain resolves to kind: wallet-rejected', () => {
+    const rejection = new UserRejectedRequestError(new Error('user rejected'))
+
+    const result = decodeBridgeError({ error: rejection })
+
+    expect(result.kind).toBe('wallet-rejected')
+    expect(result.message.toLowerCase()).toContain('rejected')
+  })
+
+  test('an error whose only rejection signal is a numeric code of 4001, with no typed class, still resolves to wallet-rejected', () => {
+    const rejection = { code: 4001, message: 'User rejected the request.' }
+
+    const result = decodeBridgeError({ error: rejection })
+
+    expect(result.kind).toBe('wallet-rejected')
+  })
+
+  test('wallet-rejected is distinct from every on-chain failure kind', () => {
+    const rejection = new UserRejectedRequestError(new Error('user rejected'))
+    const revert = createRevertedError({
+      errorName: 'BridgeMessageAlreadyProcessed',
+      args: [`0x${'ab'.repeat(32)}` as Hex],
+    })
+
+    const rejected = decodeBridgeError({ error: rejection })
+    const reverted = decodeBridgeError({ error: revert })
+
+    expect(rejected.kind).not.toBe(reverted.kind)
+  })
+})
+
+describe('decodeBridgeError — empty revert data (out-of-gas)', () => {
+  test('raw "0x" with no decoded data resolves to kind: out-of-gas, never unknown or revert-string', () => {
+    const reverted = new ContractFunctionRevertedError({
+      abi: bridgeErrorAbi,
+      data: '0x',
+      functionName: 'lock',
+    })
+
+    const result = decodeBridgeError({ error: reverted })
+
+    expect(result.kind).toBe('out-of-gas')
+  })
+
+  test('raw undefined with no decoded data resolves identically to raw "0x"', () => {
+    const reverted = new ContractFunctionRevertedError({
+      abi: bridgeErrorAbi,
+      functionName: 'lock',
+    })
+
+    const result = decodeBridgeError({ error: reverted })
+
+    expect(result.kind).toBe('out-of-gas')
+  })
+
+  test('raw "0X" (uppercase prefix) classifies identically to "0x"', () => {
+    const reverted = new ContractFunctionRevertedError({
+      abi: bridgeErrorAbi,
+      data: '0X' as unknown as Hex,
+      functionName: 'lock',
+    })
+
+    const result = decodeBridgeError({ error: reverted })
+
+    expect(result.kind).toBe('out-of-gas')
+  })
+})
+
+describe('decodeBridgeError — insufficient native gas', () => {
+  test('an explicit gasEstimate on Base Sepolia names the chain, the faucet, and the computed figure', () => {
+    const error = new InsufficientFundsError()
+
+    const result = decodeBridgeError({
+      error,
+      chainId: 84532,
+      gasEstimate: { gas: 200_000n, feePerGas: 1_500_000_000n },
+    })
+
+    expect(result.kind).toBe('insufficient-gas')
+    expect(result.message).toContain('Base Sepolia')
+    expect(result.message).toContain('0.0003')
+    expect(result.message).toContain('alchemy.com/faucets/base-sepolia')
+  })
+
+  test('an explicit gasEstimate on Arbitrum Sepolia names the chain and its own faucet', () => {
+    const error = new InsufficientFundsError()
+
+    const result = decodeBridgeError({
+      error,
+      chainId: 421614,
+      gasEstimate: { gas: 200_000n, feePerGas: 1_500_000_000n },
+    })
+
+    expect(result.kind).toBe('insufficient-gas')
+    expect(result.message).toContain('Arbitrum Sepolia')
+    expect(result.message).toContain('alchemy.com/faucets/arbitrum-sepolia')
+  })
+
+  test('a figure recovered from metaMessages is used instead of the default, and differs from 0.0004', () => {
+    const insufficientFunds = new InsufficientFundsError()
+    const wrapped = createEstimateGasErrorWithArgs({
+      cause: insufficientFunds,
+      gas: 500_000n,
+      maxFeePerGas: 2_000_000_000n,
+    })
+
+    const result = decodeBridgeError({ error: wrapped, chainId: 84532 })
+
+    expect(result.kind).toBe('insufficient-gas')
+    expect(result.message).not.toContain('0.0004')
+    expect(result.message).toContain('0.001')
+  })
+
+  test('neither gasEstimate nor a parseable arguments block available falls back to the 0.0004 default, still naming the chain and faucet, without claiming it was measured', () => {
+    const error = new InsufficientFundsError()
+
+    const result = decodeBridgeError({ error, chainId: 84532 })
+
+    expect(result.kind).toBe('insufficient-gas')
+    expect(result.message).toContain('0.0004')
+    expect(result.message).toContain('Base Sepolia')
+    expect(result.message).toContain('alchemy.com/faucets/base-sepolia')
+    expect(result.message.toLowerCase()).not.toContain('you need ~0.0004')
+  })
+
+  test('gas: 0n falls back to the 0.0004 default, never rendering 0 ETH or NaN', () => {
+    const error = new InsufficientFundsError()
+
+    const result = decodeBridgeError({
+      error,
+      chainId: 84532,
+      gasEstimate: { gas: 0n, feePerGas: 1_500_000_000n },
+    })
+
+    expect(result.kind).toBe('insufficient-gas')
+    expect(result.message).toContain('0.0004')
+    expect(result.message).not.toContain('0 ETH')
+    expect(result.message).not.toContain('NaN')
+  })
+
+  test('an unrecognised chainId yields a message containing neither faucet URL', () => {
+    const error = new InsufficientFundsError()
+
+    const result = decodeBridgeError({
+      error,
+      chainId: 999_999,
+      gasEstimate: { gas: 200_000n, feePerGas: 1_500_000_000n },
+    })
+
+    expect(result.kind).toBe('insufficient-gas')
+    expect(result.message).not.toContain('alchemy.com/faucets/base-sepolia')
+    expect(result.message).not.toContain('alchemy.com/faucets/arbitrum-sepolia')
+  })
+
+  test('an absent chainId yields a message containing neither faucet URL', () => {
+    const error = new InsufficientFundsError()
+
+    const result = decodeBridgeError({
+      error,
+      gasEstimate: { gas: 200_000n, feePerGas: 1_500_000_000n },
+    })
+
+    expect(result.kind).toBe('insufficient-gas')
+    expect(result.message).not.toContain('alchemy.com/faucets/base-sepolia')
+    expect(result.message).not.toContain('alchemy.com/faucets/arbitrum-sepolia')
+  })
+})
+
 function createRevertedError({
   errorName,
   args,
@@ -349,4 +516,20 @@ function createErrorStringRevert(reason: string): ContractFunctionRevertedError 
     data,
     functionName: 'lock',
   })
+}
+
+function createEstimateGasErrorWithArgs({
+  cause,
+  gas,
+  maxFeePerGas,
+}: {
+  cause: InsufficientFundsError
+  gas: bigint
+  maxFeePerGas: bigint
+}): EstimateGasExecutionError {
+  // `EstimateGasExecutionError`'s second constructor param has a large generic surface
+  // (`EstimateGasParameters<any>`) that isn't worth reproducing in full for a test fixture — the
+  // fields under test (`gas`, `maxFeePerGas`) are what get rendered into the real
+  // `'Estimate Gas Arguments:'` prettyPrint block our decoder parses.
+  return new EstimateGasExecutionError(cause, { gas, maxFeePerGas } as never)
 }
