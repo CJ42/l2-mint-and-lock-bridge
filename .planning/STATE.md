@@ -5,8 +5,8 @@ milestone_name: milestone
 current_phase: 1
 current_phase_name: Pure Foundation — ABI, Error Mapping & Flow-State Derivation
 status: executing
-stopped_at: Phase 3 context gathered
-last_updated: "2026-07-25T12:04:27.962Z"
+stopped_at: Phase 3 UI-SPEC approved
+last_updated: "2026-07-25T12:21:32.340Z"
 last_activity: 2026-07-24
 last_activity_desc: ROADMAP.md and STATE.md created from REQUIREMENTS.md and research/SUMMARY.md
 progress:
@@ -93,6 +93,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-25T12:04:27.942Z
-Stopped at: Phase 3 context gathered
-Resume file: .planning/phases/03-flow-orchestration-ui-integration/03-CONTEXT.md
+Last session: 2026-07-25T12:21:32.323Z
+Stopped at: Phase 3 UI-SPEC approved
+Resume file: .planning/phases/03-flow-orchestration-ui-integration/03-UI-SPEC.md
