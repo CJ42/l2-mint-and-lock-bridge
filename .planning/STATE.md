@@ -4,16 +4,16 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 01
 current_phase_name: Pure Foundation — ABI, Error Mapping & Flow-State Derivation
-status: executing
-stopped_at: Completed 01-02-PLAN.md
-last_updated: "2026-07-25T16:30:30.147Z"
+status: verifying
+stopped_at: Completed 01-03-PLAN.md
+last_updated: "2026-07-25T16:35:34.843Z"
 last_activity: 2026-07-25
-last_activity_desc: Completed 01-02 (full ordered error-decode chain)
+last_activity_desc: Completed 01-03 (pure flow-state derivation)
 progress:
   total_phases: 3
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 10
-  completed_plans: 2
+  completed_plans: 3
 ---
 
 # Project State
@@ -29,12 +29,12 @@ the actual on-chain error.
 
 ## Current Position
 
-Phase: 01 (Pure Foundation — ABI, Error Mapping & Flow-State Derivation) — EXECUTING
+Phase: 01 (Pure Foundation — ABI, Error Mapping & Flow-State Derivation) — VERIFYING
 Plan: 3 of 3
-Status: Ready to execute
-Last activity: 2026-07-25 — Completed 01-02 (full ordered error-decode chain)
+Status: Phase complete — ready for verification
+Last activity: 2026-07-25 — Completed 01-03 (pure flow-state derivation)
 
-Progress: [██░░░░░░░░] 20%
+Progress: [███░░░░░░░] 30%
 
 ## Performance Metrics
 
@@ -62,6 +62,7 @@ Progress: [██░░░░░░░░] 20%
 |------|----------|-------|-------|
 | Phase 01 P01 | 75min | 2 tasks | 9 files |
 | Phase 01 P02 | 80 min | 3 tasks | 2 files |
+| Phase 01 P03 | 5 min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -79,6 +80,8 @@ Recent decisions affecting current work:
 - [Phase ?]: 01-01: bridgeErrorAbi dedups by 4-byte selector across [collateral, synthetic, wrappedToken, ierc20]; wagmi.config.ts sets exclude: [] (not omitted) because @wagmi/cli's default excludes silently drop IERC20.sol
 - [Phase 01]: 01-02: gas shortfall computed from three ordered sources (explicit gasEstimate -> metaMessages parse -> fixed 0.0004 default) with an isComputed flag, because viem's InsufficientFundsError carries no gas/fee fields; native ETH uses formatEther + ceil-to-4dp, never the 6-decimal token formatter
 - [Phase 01]: 01-02: panic wording and the test's Error(string)/Panic(uint256) fixture fragments are declared locally, because viem/constants and solidityError/solidityPanic are not in viem's public subpath export allow-list
+- [Phase 01]: 01-03: BridgeFlowState is the sole semantic derivation for button and stepper; failure has highest precedence, carries the decoded error and failed step, and collapses only in-flight statuses
+- [Phase 01]: 01-03: transaction progress maps directly from wagmi write pending and receipt fetching/success flags; relay progress comes only from BridgeInitiated/BridgeFinalized events and never has a pending state
 
 ### Pending Todos
 
@@ -102,6 +105,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-25T16:29:53.851Z
-Stopped at: Completed 01-02-PLAN.md
+Last session: 2026-07-25T16:35:34.823Z
+Stopped at: Completed 01-03-PLAN.md
 Resume file: None
