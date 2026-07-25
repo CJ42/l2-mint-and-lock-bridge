@@ -36,7 +36,7 @@ contract WrappedToken is ERC20, ERC20Burnable {
 
     /// @dev Disable the single burn functions so to always ensure invariant locked collateral tokens on chains equal
     /// number of synthetic tokens on this current chain where the WrappedToken is deployed.
-    function burn(uint256 amount) public override {
+    function burn(uint256 /* amount */) public override {
         revert Errors.BurningTokensDisallowedForUsers();
     }
 

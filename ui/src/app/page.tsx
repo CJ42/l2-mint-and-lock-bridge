@@ -19,6 +19,8 @@ export default function HomePage() {
       <header className={styles.header}>
         <a className={styles.brand} href="/" aria-label="L2 Bridge home">
           [ L2 BRIDGE ]
+        <a className={styles.brand} href="/" aria-label="L2 Bridge home">
+          [ L2 BRIDGE ]
         </a>
         <ConnectButton
           accountStatus={{ smallScreen: 'avatar', largeScreen: 'full' }}

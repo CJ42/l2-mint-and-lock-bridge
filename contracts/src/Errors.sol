@@ -17,10 +17,7 @@ error BridgeMessageAlreadyProcessed(bytes32 messageId);
 /// @dev Throws when the provided destination chain ID does not match the expected chain ID.
 /// @param expectedChainId The correct/expected chain id.
 /// @param receivedChainId The chain id actually received.
-error InvalidDestinationChainId(
-    uint256 expectedChainId,
-    uint256 receivedChainId
-);
+error InvalidDestinationChainId(uint256 expectedChainId, uint256 receivedChainId);
 
 /// @dev Throws if someone attempts to set the relayer to the zero address.
 error RelayerCannotBeZeroAddress();

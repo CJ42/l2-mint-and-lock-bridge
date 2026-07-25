@@ -1,6 +1,7 @@
 .explorer {
   width: min(1120px, calc(100% - 32px));
   margin: 72px auto 0;
+  margin: 72px auto 0;
 }
 
 .heading {
@@ -102,6 +103,8 @@
 }
 
 .pending {
+  color: var(--orange);
+  background: var(--orange-soft);
   color: var(--orange);
   background: var(--orange-soft);
 }

@@ -20,12 +20,7 @@ contract ReplayTest is TestSetup {
         syntheticBridge.mint(message);
 
         assertTrue(syntheticBridge.processed(id));
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Errors.BridgeMessageAlreadyProcessed.selector,
-                id
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(Errors.BridgeMessageAlreadyProcessed.selector, id));
         vm.prank(relayer);
         syntheticBridge.mint(message);
     }
@@ -38,10 +33,7 @@ contract ReplayTest is TestSetup {
         collateralBridge.unlock(message);
 
         vm.expectRevert(
-            abi.encodeWithSelector(
-                Errors.BridgeMessageAlreadyProcessed.selector,
-                message.computeBridgeMessageId()
-            )
+            abi.encodeWithSelector(Errors.BridgeMessageAlreadyProcessed.selector, message.computeBridgeMessageId())
         );
         vm.prank(relayer);
         collateralBridge.unlock(message);
@@ -51,11 +43,7 @@ contract ReplayTest is TestSetup {
         vm.chainId(BASE_CHAIN_ID);
 
         vm.expectRevert(
-            abi.encodeWithSelector(
-                Errors.InvalidDestinationChainId.selector,
-                BASE_CHAIN_ID,
-                ARBITRUM_CHAIN_ID
-            )
+            abi.encodeWithSelector(Errors.InvalidDestinationChainId.selector, BASE_CHAIN_ID, ARBITRUM_CHAIN_ID)
         );
         vm.prank(relayer);
         syntheticBridge.mint(baseToArbitrumMessage(0));
@@ -65,11 +53,7 @@ contract ReplayTest is TestSetup {
         vm.chainId(ARBITRUM_CHAIN_ID);
 
         vm.expectRevert(
-            abi.encodeWithSelector(
-                Errors.InvalidDestinationChainId.selector,
-                ARBITRUM_CHAIN_ID,
-                BASE_CHAIN_ID
-            )
+            abi.encodeWithSelector(Errors.InvalidDestinationChainId.selector, ARBITRUM_CHAIN_ID, BASE_CHAIN_ID)
         );
         vm.prank(relayer);
         collateralBridge.unlock(arbitrumToBaseMessage(0));

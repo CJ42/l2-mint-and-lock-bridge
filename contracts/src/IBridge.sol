@@ -11,13 +11,6 @@ interface IBridge {
         uint256 originChainId,
         uint256 destinationChainId
     );
-    event BridgeFinalized(
-        bytes32 indexed messageId,
-        address indexed recipient,
-        uint256 amount
-    );
-    event RelayerUpdated(
-        address indexed previousRelayer,
-        address indexed newRelayer
-    );
+    event BridgeFinalized(bytes32 indexed messageId, address indexed recipient, uint256 amount);
+    event RelayerUpdated(address indexed previousRelayer, address indexed newRelayer);
 }

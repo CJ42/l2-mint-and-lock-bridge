@@ -6,6 +6,7 @@ import type { ReactNode } from 'react'
 import type { UseBridgeFlowResult } from '@/hooks/use-bridge-flow'
 import {
   chains,
+  chains,
   directions,
   formatTokenAmount,
   type ChainMeta,
@@ -51,6 +52,8 @@ export function BridgeCard({ flow }: BridgeCardProps) {
       <div className={styles.cardHeading}>
         <h2 id="bridge-heading">Transfer</h2>
         <span className={styles.tag}>Testnet</span>
+        <h2 id="bridge-heading">Transfer</h2>
+        <span className={styles.tag}>Testnet</span>
       </div>
 
       {!isBridgeDeployed && (
@@ -85,14 +88,20 @@ export function BridgeCard({ flow }: BridgeCardProps) {
 
       <div className={styles.field}>
         <div className={styles.fieldHead}>
+        <div className={styles.fieldHead}>
           <label htmlFor="amount">Amount</label>
+          <button type="button" className={styles.ghost} onClick={setMaxAmount}>
+            Max
+          </button>
           <button type="button" className={styles.ghost} onClick={setMaxAmount}>
             Max
           </button>
         </div>
         <div className={styles.inputShell}>
+        <div className={styles.inputShell}>
           <input
             id="amount"
+            className={styles.amountInput}
             className={styles.amountInput}
             inputMode="decimal"
             placeholder="0.00"
@@ -103,9 +112,15 @@ export function BridgeCard({ flow }: BridgeCardProps) {
             <Image src={originChain.logo} alt="" width={16} height={16} />
             {direction.tokenSymbol}
           </span>
+          <span className={styles.token}>
+            <Image src={originChain.logo} alt="" width={16} height={16} />
+            {direction.tokenSymbol}
+          </span>
         </div>
       </div>
 
+      <div className={styles.field}>
+        <div className={styles.fieldHead}>
       <div className={styles.field}>
         <div className={styles.fieldHead}>
           <label htmlFor="recipient">Recipient</label>
@@ -182,6 +197,62 @@ export function BridgeCard({ flow }: BridgeCardProps) {
         </button>
       )}
     </section>
+  )
+}
+
+function ChainPanel({
+  label,
+  chain,
+  balance,
+  isConnected,
+  isDestination = false,
+}: {
+  label: string
+  chain: ChainMeta
+  balance?: bigint
+  isConnected: boolean
+  isDestination?: boolean
+}) {
+  return (
+    <div
+      className={
+        isDestination ? `${styles.chain} ${styles.chainEnd}` : styles.chain
+      }
+    >
+      <span className={styles.chainLabel}>{label}</span>
+      {isConnected && (
+        <span className={styles.chainBalance}>
+          Balance on {chain.name} ={' '}
+          {balance === undefined
+            ? '…'
+            : `${formatTokenAmount(balance)} ${chain.tokenSymbol}`}
+        </span>
+      )}
+      <span className={styles.chainName}>
+        <Image src={chain.logo} alt="" width={22} height={22} />
+        {chain.name}
+      </span>
+    </div>
+  )
+}
+
+function SwapIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M1.5 5.25h11.25M9.75 2.25l3 3M14.5 10.75H3.25M6.25 13.75l-3-3"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   )
 }
 
