@@ -13,6 +13,10 @@
   --border: #e3e3e8;
   --surface: #fafafb;
   --danger: #c8102e;
+  --danger-soft: rgb(200 16 46 / 10%);
+  --green: #1f9254;
+  --green-soft: rgb(31 146 84 / 10%);
+  --green-line: rgb(31 146 84 / 24%);
   --radius: 4px;
   --font-plex: var(--font-ibm-plex-mono), ui-monospace, "SFMono-Regular",
     Consolas, "Liberation Mono", monospace;

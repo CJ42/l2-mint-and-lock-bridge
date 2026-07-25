@@ -4,10 +4,11 @@ import deploymentAddresses from '../../../addresses.json'
 
 type RpcUrls = {
   [chain: string]: {
-    default: string;
-    fallback: string;
-  };
-};
+    default: string
+    fallback: string
+    ws?: string
+  }
+}
 
 function readAddress(value: string | undefined): Address | undefined {
   if (!value || !isAddress(value) || value === zeroAddress) return undefined
@@ -36,12 +37,14 @@ export const addresses = {
 export const rpcUrls: RpcUrls = {
   baseSepolia: {
     default: baseSepolia.rpcUrls.default.http[0],
-    fallback: "https://base-sepolia.drpc.org"
+    fallback: 'https://base-sepolia.drpc.org',
+    ws: 'wss://base-sepolia-rpc.publicnode.com',
   },
   arbitrumSepolia: {
     default: arbitrumSepolia.rpcUrls.default.http[0],
-    fallback: "https://arbitrum-sepolia.drpc.org"
-  }
+    fallback: 'https://arbitrum-sepolia.drpc.org',
+    ws: 'wss://arbitrum-sepolia-rpc.publicnode.com',
+  },
 }
 
 export const isBaseDeployed = Boolean(addresses.baseBridge && addresses.baseUsdc)
@@ -54,4 +57,5 @@ export const scanConfiguration = {
   blockWindow: 50_000n,
   chunkSize: 2_000n,
   pollingInterval: 6_000,
+  reconcileInterval: 60_000,
 }

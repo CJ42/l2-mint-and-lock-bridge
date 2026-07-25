@@ -33,7 +33,7 @@ export function MessageExplorer({
         </div>
         <div className={styles.live}>
           <span />
-          Updates every 6s
+          Live
         </div>
       </div>
 

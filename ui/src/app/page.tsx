@@ -1,18 +1,18 @@
 'use client'
 
 import { ConnectButton } from '@rainbow-me/rainbowkit'
-import { useState } from 'react'
-import type { Hex } from 'viem'
 
 import { BridgeCard } from '@/components/bridge-card'
+import { BridgeStepper } from '@/components/bridge-stepper'
 import { MessageExplorer } from '@/components/message-explorer'
+import { useBridgeFlow } from '@/hooks/use-bridge-flow'
 import { useBridgeMessages } from '@/hooks/use-bridge-messages'
 
 import styles from './page.module.css'
 
 export default function HomePage() {
-  const [activeMessageId, setActiveMessageId] = useState<Hex>()
   const { messages, isLoading, error } = useBridgeMessages()
+  const flow = useBridgeFlow({ messages })
 
   return (
     <main className={styles.main}>
@@ -40,16 +40,13 @@ export default function HomePage() {
               <li key={fact}>{fact}</li>
             ))}
           </ul>
+          <BridgeStepper flowState={flow.flowState} />
         </div>
-        <BridgeCard
-          messages={messages}
-          activeMessageId={activeMessageId}
-          onActiveMessageChange={setActiveMessageId}
-        />
+        <BridgeCard flow={flow} />
       </div>
       <MessageExplorer
         messages={messages}
-        activeMessageId={activeMessageId}
+        activeMessageId={flow.messageId}
         isLoading={isLoading}
         error={error}
       />
