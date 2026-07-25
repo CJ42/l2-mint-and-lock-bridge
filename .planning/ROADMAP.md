@@ -68,13 +68,27 @@ the flow so a transport failure never blocks the demo.
   4. A log re-emitted with `removed: true` after a chain reorganisation does not leave a step or a message falsely marked confirmed
   5. The message explorer list runs on the same live-watch mechanism (with its own bounded seed scan) instead of the previous 6-second poll
 
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
+**Wave 1**
 
-- [ ] 02-01: WSS smoke test + `fallback()` transport wiring (WebSocket at index 0, ranking disabled) + transport-mode tracking + staleness watchdog + HTTP-polling degrade
-- [ ] 02-02: `use-relay-status.ts` — seed-then-subscribe for a single `messageId` on the explicit destination `chainId`, with reorg (`removed: true`) and dedupe handling
-- [ ] 02-03: Message explorer (`use-bridge-messages.ts`) upgraded to the same live-watch mechanism with bounded seed scan
+- [ ] 02-01-PLAN.md — Tracer: WSS smoke test (LIVE-02 evidence) + committed `ws` constants + WebSocket-at-index-0 `fallback()` clients + `wagmi.ts` wiring + one live `BridgeFinalized` subscription proven to use `eth_subscribe`; plus the pure `TransportMode` / staleness-formula / messageId-merge module (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 02-02-PLAN.md — `createLiveWatch()`: seed-then-subscribe engine with `watchBlocks` heartbeat, staleness watchdog, once-only `onError` degrade to HTTP polling, and always-on slow reconciliation (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion; the two plans run in parallel)*
+
+- [ ] 02-03-PLAN.md — `use-relay-status.ts`: bounded newest-first seed then subscribe for a single `messageId` on the explicit destination `chainId`, with reorg rollback and dedupe (wave 3)
+- [ ] 02-04-PLAN.md — Message explorer (`use-bridge-messages.ts`) upgraded to the same live-watch mechanism, retaining `scanChain()` as seed and reconciliation, replacing the 6-second poll (wave 3)
+
+*Plan count differs from the three originally proposed: the shared staleness-watchdog and degrade
+engine (LIVE-05/LIVE-06) is consumed by both hooks and does not fit inside either without exceeding
+the per-plan context budget or duplicating the phase's subtlest logic, so it was extracted into
+02-02. Splitting wave 3 into two plans then lets the relay watch and the explorer upgrade run in
+parallel.*
 
 ### Phase 3: Flow Orchestration & UI Integration
 
@@ -108,5 +122,5 @@ Phases execute in numeric order: 1 → 2 → 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Pure Foundation — ABI, Error Mapping & Flow-State Derivation | 0/3 | Not started | - |
-| 2. RPC Transport & Live Event Subscription | 0/3 | Not started | - |
+| 2. RPC Transport & Live Event Subscription | 0/4 | Not started | - |
 | 3. Flow Orchestration & UI Integration | 0/3 | Not started | - |
