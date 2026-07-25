@@ -201,10 +201,22 @@ function ChainPanel({
   return (
     <div
       className={
-        isDestination ? `${styles.chain} ${styles.chainEnd}` : styles.chain
+        isDestination
+          ? `${styles.chainGroup} ${styles.chainGroupEnd}`
+          : styles.chainGroup
       }
     >
-      <span className={styles.chainLabel}>{label}</span>
+      <div
+        className={
+          isDestination ? `${styles.chain} ${styles.chainEnd}` : styles.chain
+        }
+      >
+        <span className={styles.chainLabel}>{label}</span>
+        <span className={styles.chainName}>
+          <Image src={chain.logo} alt="" width={22} height={22} />
+          {chain.name}
+        </span>
+      </div>
       {isConnected && (
         <span className={styles.chainBalance}>
           Balance on {chain.name} ={' '}
@@ -213,10 +225,6 @@ function ChainPanel({
             : `${formatTokenAmount(balance)} ${chain.tokenSymbol}`}
         </span>
       )}
-      <span className={styles.chainName}>
-        <Image src={chain.logo} alt="" width={22} height={22} />
-        {chain.name}
-      </span>
     </div>
   )
 }

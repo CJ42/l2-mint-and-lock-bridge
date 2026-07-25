@@ -107,8 +107,8 @@
 }
 
 .finalized {
-  color: var(--blue);
-  background: var(--blue-soft);
+  color: var(--green);
+  background: var(--green-soft);
 }
 
 .links {
