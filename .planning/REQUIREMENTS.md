@@ -33,11 +33,11 @@ Requirements for this milestone. Each maps to exactly one roadmap phase.
 
 ### Transaction Flow State
 
-- [ ] **FLOW-01**: A single derived state value is the only source of truth for both the stepper and the action button
+- [x] **FLOW-01**: A single derived state value is the only source of truth for both the stepper and the action button
 - [ ] **FLOW-02**: Approve runs on every bridge for the exact amount, so all three steps always execute
 - [ ] **FLOW-03**: `getActionState()` and the duplicated `approveHash`/`bridgeHash` local state are removed from `bridge-card.tsx`
 - [ ] **FLOW-04**: A user who reloads the page mid-bridge sees their in-flight transaction restored, rehydrated from persisted storage
-- [ ] **FLOW-05**: On failure the flow leaves the pending state, so no step is ever left spinning while the explanation sits in the error banner
+- [x] **FLOW-05**: On failure the flow leaves the pending state, so no step is ever left spinning while the explanation sits in the error banner
 
 ### Stepper
 
@@ -54,8 +54,8 @@ Requirements for this milestone. Each maps to exactly one roadmap phase.
 ### Live Updates
 
 - [ ] **LIVE-01**: Relay completion is detected from the destination-chain `BridgeFinalized` event, watched with an explicit `chainId` so it works regardless of which chain the wallet is on
-- [ ] **LIVE-02**: WebSocket RPC endpoints for both chains are verified by manual smoke test before any application code depends on them
-- [ ] **LIVE-03**: The WebSocket transport sits at index 0 of the `fallback()` array with ranking disabled, so live subscriptions actually use `eth_subscribe`
+- [x] **LIVE-02**: WebSocket RPC endpoints for both chains are verified by manual smoke test before any application code depends on them
+- [x] **LIVE-03**: The WebSocket transport sits at index 0 of the `fallback()` array with ranking disabled, so live subscriptions actually use `eth_subscribe`
 - [ ] **LIVE-04**: A bounded `getLogs` seed runs before the live subscription opens, so an event that fired before subscription is never missed
 - [ ] **LIVE-05**: WebSocket failure degrades to HTTP polling via an explicit `onError` path, and the transaction flow keeps working throughout
 - [ ] **LIVE-06**: A staleness watchdog detects a silently dead socket that never fires an error, and triggers the polling fallback
@@ -112,11 +112,11 @@ Which phases cover which requirements. Populated during roadmap creation.
 | ERR-07 | Phase 1 | Complete |
 | ERR-08 | Phase 1 | Complete |
 | ERR-09 | Phase 1 | Complete |
-| FLOW-01 | Phase 1 | Pending |
-| FLOW-05 | Phase 1 | Pending |
+| FLOW-01 | Phase 1 | Complete |
+| FLOW-05 | Phase 1 | Complete |
 | LIVE-01 | Phase 2 | Pending |
-| LIVE-02 | Phase 2 | Pending |
-| LIVE-03 | Phase 2 | Pending |
+| LIVE-02 | Phase 2 | Complete |
+| LIVE-03 | Phase 2 | Complete |
 | LIVE-04 | Phase 2 | Pending |
 | LIVE-05 | Phase 2 | Pending |
 | LIVE-06 | Phase 2 | Pending |

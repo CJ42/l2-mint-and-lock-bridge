@@ -2,10 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  createPublicClient,
-  getAbiItem,
-  http,
-  fallback,
   type Address,
   type Chain,
   type Hex,
@@ -14,36 +10,10 @@ import {
 } from 'viem'
 import { arbitrumSepolia, baseSepolia } from 'viem/chains'
 
-import { collateralTokenBridgeAbi } from '@/lib/generated'
 import type { BridgeMessage } from '@/lib/bridge'
-import { addresses, rpcUrls, scanConfiguration } from '@/lib/config'
-
-// Both bridge contracts declare byte-identical BridgeInitiated/BridgeFinalized event
-// fragments, so resolving them from the collateral bridge ABI is correct for either chain.
-const bridgeInitiatedEvent = getAbiItem({
-  abi: collateralTokenBridgeAbi,
-  name: 'BridgeInitiated',
-})
-const bridgeFinalizedEvent = getAbiItem({
-  abi: collateralTokenBridgeAbi,
-  name: 'BridgeFinalized',
-})
-
-const baseClient = createPublicClient({
-  chain: baseSepolia,
-  transport: fallback([
-    http(rpcUrls.baseSepolia.default),
-    http(rpcUrls.baseSepolia.fallback),
-  ])
-})
-
-const arbitrumClient = createPublicClient({
-  chain: arbitrumSepolia,
-  transport: fallback([
-    http(rpcUrls.arbitrumSepolia.default),
-    http(rpcUrls.arbitrumSepolia.fallback),
-  ])
-})
+import { bridgeFinalizedEvent, bridgeInitiatedEvent } from '@/lib/bridge-events'
+import { addresses, scanConfiguration } from '@/lib/config'
+import { baseLiveClient, arbitrumLiveClient } from '@/lib/live-clients'
 
 const blockTimestampCache = new Map<string, number>()
 
@@ -172,19 +142,19 @@ async function scanChain<TTransport extends Transport, TChain extends Chain>({
 async function fetchMessages() {
   const [baseEvents, arbitrumEvents] = await Promise.all([
     scanChain({
-      client: baseClient,
+      client: baseLiveClient,
       bridgeAddress: addresses.baseBridge,
       chainId: baseSepolia.id,
     }),
     scanChain({
-      client: arbitrumClient,
+      client: arbitrumLiveClient,
       bridgeAddress: addresses.arbitrumBridge,
       chainId: arbitrumSepolia.id,
     }),
   ])
   const finalizedById = new Map(
     [...baseEvents.finalized, ...arbitrumEvents.finalized].map((event) => [
-      event.messageId,
+      event.messageId.toLowerCase(),
       event,
     ]),
   )
@@ -192,16 +162,16 @@ async function fetchMessages() {
 
   const messages = await Promise.all(
     initiatedEvents.map(async (event): Promise<BridgeMessage> => {
-      const finalized = finalizedById.get(event.messageId)
+      const finalized = finalizedById.get(event.messageId.toLowerCase())
       const timestamp =
         event.originChainId === baseSepolia.id
           ? await readBlockTimestamp({
-              client: baseClient,
+              client: baseLiveClient,
               chainId: event.originChainId,
               blockNumber: event.blockNumber,
             })
           : await readBlockTimestamp({
-              client: arbitrumClient,
+              client: arbitrumLiveClient,
               chainId: event.originChainId,
               blockNumber: event.blockNumber,
             })
@@ -216,9 +186,42 @@ async function fetchMessages() {
     }),
   )
 
-  return messages.sort((left, right) =>
-    left.blockNumber > right.blockNumber ? -1 : 1,
-  )
+  return messages.sort((left, right) => {
+    if (left.blockNumber === right.blockNumber) return 0
+    return left.blockNumber > right.blockNumber ? -1 : 1
+  })
+}
+
+function watchChainEvents({
+  client,
+  bridgeAddress,
+  onUpdate,
+}: {
+  client: typeof baseLiveClient | typeof arbitrumLiveClient
+  bridgeAddress: Address | undefined
+  onUpdate: () => void
+}) {
+  if (!bridgeAddress) return () => {}
+
+  const unwatchInitiated = client.watchContractEvent({
+    address: bridgeAddress,
+    abi: [bridgeInitiatedEvent],
+    eventName: 'BridgeInitiated',
+    onLogs: () => onUpdate(),
+    onError: () => onUpdate(),
+  })
+  const unwatchFinalized = client.watchContractEvent({
+    address: bridgeAddress,
+    abi: [bridgeFinalizedEvent],
+    eventName: 'BridgeFinalized',
+    onLogs: () => onUpdate(),
+    onError: () => onUpdate(),
+  })
+
+  return () => {
+    unwatchInitiated()
+    unwatchFinalized()
+  }
 }
 
 export function useBridgeMessages(): UseBridgeMessagesResult {
@@ -244,12 +247,29 @@ export function useBridgeMessages(): UseBridgeMessagesResult {
 
   useEffect(() => {
     void refresh()
+
+    const stopBase = watchChainEvents({
+      client: baseLiveClient,
+      bridgeAddress: addresses.baseBridge,
+      onUpdate: () => void refresh(),
+    })
+    const stopArbitrum = watchChainEvents({
+      client: arbitrumLiveClient,
+      bridgeAddress: addresses.arbitrumBridge,
+      onUpdate: () => void refresh(),
+    })
+
+    // Safety net for silent WebSocket death or subscription gaps.
     const interval = window.setInterval(
       () => void refresh(),
       scanConfiguration.pollingInterval,
     )
 
-    return () => window.clearInterval(interval)
+    return () => {
+      stopBase()
+      stopArbitrum()
+      window.clearInterval(interval)
+    }
   }, [refresh])
 
   return { messages, isLoading, error, refresh }

@@ -41,7 +41,7 @@ function — all before any hook, component, or network wiring exists.
   3. `bun test` against `deriveFlowState()` proves it is the single source of truth for both stepper and button state from fixture inputs alone, and that a failure fixture never leaves the derived state stuck in "pending"
   4. The error-mapping module is a single file carrying an in-code comment documenting it as intentionally narrow and extensible
 
-**Plans**: 2/3 plans executed
+**Plans**: 3/3 plans executed
 
 Plans:
 **Wave 1**
@@ -51,7 +51,7 @@ Plans:
 **Wave 2** *(blocked on Wave 1 completion)*
 
 - [x] 01-02-PLAN.md — Full ordered decode chain: Tier-1/Tier-2 custom errors, ERC20 reverts, wallet rejection, empty-data out-of-gas, Panic table, computed gas shortfall, bounded generic fallback (wave 2)
-- [ ] 01-03-PLAN.md — Pure `deriveFlowState()`: discriminated-union flow state + 64-combination FLOW-05 invariant sweep (wave 2)
+- [x] 01-03-PLAN.md — Pure `deriveFlowState()`: discriminated-union flow state + 64-combination FLOW-05 invariant sweep (wave 2)
 
 ### Phase 2: RPC Transport & Live Event Subscription
 
@@ -68,12 +68,12 @@ the flow so a transport failure never blocks the demo.
   4. A log re-emitted with `removed: true` after a chain reorganisation does not leave a step or a message falsely marked confirmed
   5. The message explorer list runs on the same live-watch mechanism (with its own bounded seed scan) instead of the previous 6-second poll
 
-**Plans**: 4 plans
+**Plans**: 1/4 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 02-01-PLAN.md — Tracer: WSS smoke test (LIVE-02 evidence) + committed `ws` constants + WebSocket-at-index-0 `fallback()` clients + `wagmi.ts` wiring + one live `BridgeFinalized` subscription proven to use `eth_subscribe`; plus the pure `TransportMode` / staleness-formula / messageId-merge module (wave 1)
+- [x] 02-01-PLAN.md — Tracer: WSS smoke test (LIVE-02 evidence) + committed `ws` constants + WebSocket-at-index-0 `fallback()` clients + `wagmi.ts` wiring + one live `BridgeFinalized` subscription proven to use `eth_subscribe`; plus the pure `TransportMode` / staleness-formula / messageId-merge module (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -133,6 +133,6 @@ Phases execute in numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Pure Foundation — ABI, Error Mapping & Flow-State Derivation | 2/3 | In Progress|  |
-| 2. RPC Transport & Live Event Subscription | 0/4 | Not started | - |
+| 1. Pure Foundation — ABI, Error Mapping & Flow-State Derivation | 3/3 | In Progress|  |
+| 2. RPC Transport & Live Event Subscription | 1/4 | In Progress|  |
 | 3. Flow Orchestration & UI Integration | 0/3 | Not started | - |

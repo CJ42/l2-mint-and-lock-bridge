@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 01
-current_phase_name: Pure Foundation — ABI, Error Mapping & Flow-State Derivation
-status: verifying
-stopped_at: Completed 01-03-PLAN.md
-last_updated: "2026-07-25T16:35:34.843Z"
+current_phase: 02
+current_phase_name: RPC Transport & Live Event Subscription
+status: executing
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-07-25T16:42:52.080Z"
 last_activity: 2026-07-25
-last_activity_desc: Completed 01-03 (pure flow-state derivation)
+last_activity_desc: Completed 02-01 (verified WebSocket transport and live-state primitives)
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 10
-  completed_plans: 3
+  completed_plans: 4
 ---
 
 # Project State
@@ -25,16 +25,16 @@ See: .planning/PROJECT.md (updated 2026-07-24)
 **Core value:** The user is never left guessing: at every moment the UI shows exactly which
 state their bridge transaction is in, and when it fails it says why in plain language backed by
 the actual on-chain error.
-**Current focus:** Phase 01 — Pure Foundation — ABI, Error Mapping & Flow-State Derivation
+**Current focus:** Phase 02 — RPC Transport & Live Event Subscription
 
 ## Current Position
 
-Phase: 01 (Pure Foundation — ABI, Error Mapping & Flow-State Derivation) — VERIFYING
-Plan: 3 of 3
-Status: Phase complete — ready for verification
-Last activity: 2026-07-25 — Completed 01-03 (pure flow-state derivation)
+Phase: 02 (RPC Transport & Live Event Subscription) — EXECUTING
+Plan: 2 of 4
+Status: Ready to execute
+Last activity: 2026-07-25 — Completed 02-01 (verified WebSocket transport and live-state primitives)
 
-Progress: [███░░░░░░░] 30%
+Progress: [████░░░░░░] 40%
 
 ## Performance Metrics
 
@@ -63,6 +63,7 @@ Progress: [███░░░░░░░] 30%
 | Phase 01 P01 | 75min | 2 tasks | 9 files |
 | Phase 01 P02 | 80 min | 3 tasks | 2 files |
 | Phase 01 P03 | 5 min | 2 tasks | 2 files |
+| Phase 02 P01 | 8 min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -82,6 +83,8 @@ Recent decisions affecting current work:
 - [Phase 01]: 01-02: panic wording and the test's Error(string)/Panic(uint256) fixture fragments are declared locally, because viem/constants and solidityError/solidityPanic are not in viem's public subpath export allow-list
 - [Phase 01]: 01-03: BridgeFlowState is the sole semantic derivation for button and stepper; failure has highest precedence, carries the decoded error and failed step, and collapses only in-flight statuses
 - [Phase 01]: 01-03: transaction progress maps directly from wagmi write pending and receipt fetching/success flags; relay progress comes only from BridgeInitiated/BridgeFinalized events and never has a pending state
+- [Phase 02]: 02-01: PublicNode is the selected no-key WSS provider for Base Sepolia and Arbitrum Sepolia after all four PublicNode/dRPC candidates delivered real eth_subscription notifications
+- [Phase 02]: 02-01: live clients and wagmi both pin webSocket at fallback index 0 with no ranking options; health is an explicit four-member TransportMode and removed logs roll confirmation back by messageId
 
 ### Pending Todos
 
@@ -89,11 +92,8 @@ None yet.
 
 ### Blockers/Concerns
 
-- Phase 2 (RPC Transport): WSS endpoint availability for Base Sepolia and Arbitrum Sepolia is
-  the one LOW-confidence area across all research files — no official public RPC confirmed to
-  serve `wss://`. Must be resolved by manual smoke test before wiring; a keyed third-party
-  provider (Alchemy/Ankr/QuickNode) is the fallback if free-tier candidates prove unusable. The
-  design must stay fully HTTP-polling-safe regardless.
+- PublicNode WSS is verified on both testnets, but shared public infrastructure can still degrade;
+  plans 02-02 through 02-04 must retain the explicit HTTP-polling fallback and staleness watchdog.
 
 ## Deferred Items
 
@@ -105,6 +105,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-25T16:35:34.823Z
-Stopped at: Completed 01-03-PLAN.md
+Last session: 2026-07-25T16:42:52.068Z
+Stopped at: Completed 02-01-PLAN.md
 Resume file: None
