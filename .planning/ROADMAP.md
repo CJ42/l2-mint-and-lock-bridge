@@ -37,12 +37,12 @@ function — all before any hook, component, or network wiring exists.
   2. `bun test` against the error-mapping module resolves each of: a known bridge custom error (with its evidence values, e.g. `messageId`), an ERC20-originated revert (`SafeERC20FailedOperation`), a wallet rejection, an empty-data/out-of-gas failure, and a `Panic(uint256)` code — each to a distinct message — with any unrecognised revert falling through to a generic message that still surfaces the raw revert data
   3. `bun test` against `deriveFlowState()` proves it is the single source of truth for both stepper and button state from fixture inputs alone, and that a failure fixture never leaves the derived state stuck in "pending"
   4. The error-mapping module is a single file carrying an in-code comment documenting it as intentionally narrow and extensible
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 01-01: ABI generation (`@wagmi/cli` foundry plugin + Bun script) replacing hand-written ABI sources
-- [ ] 01-02: Error-mapping module — ordered decode chain (custom errors → ERC20 reverts → wallet rejection → empty-data/out-of-gas → Panic codes → generic fallback)
-- [ ] 01-03: Pure `deriveFlowState()` — discriminated-union flow state + fixture-based tests
+- [ ] 01-01-PLAN.md — Tracer: `@wagmi/cli` foundry codegen + one real bridge revert decoded end-to-end into a human sentence, then retire the hand-written ABI sources (wave 1)
+- [ ] 01-02-PLAN.md — Full ordered decode chain: Tier-1/Tier-2 custom errors, ERC20 reverts, wallet rejection, empty-data out-of-gas, Panic table, computed gas shortfall, bounded generic fallback (wave 2)
+- [ ] 01-03-PLAN.md — Pure `deriveFlowState()`: discriminated-union flow state + 64-combination FLOW-05 invariant sweep (wave 2)
 
 ### Phase 2: RPC Transport & Live Event Subscription
 **Goal**: Relay status and the message explorer update live from chain events over a verified,
