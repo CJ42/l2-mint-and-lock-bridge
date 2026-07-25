@@ -105,14 +105,26 @@ on failure into one error banner, and recoverable after a page refresh.
   4. Reloading the browser mid-bridge restores the in-flight transaction's stepper and button state from persisted storage instead of resetting to idle
   5. `getActionState()` and the duplicated `approveHash`/`bridgeHash` local state no longer exist in `bridge-card.tsx`
 
-**Plans**: TBD
+**Plans**: 3 plans
 **UI hint**: yes
 
 Plans:
+**Wave 1**
 
-- [ ] 03-01: `use-bridge-flow.ts` orchestration hook — simulate/write/receipt chains + relay-status watch + approve-every-run + page-refresh rehydration
-- [ ] 03-02: `stepper.tsx` / `action-button.tsx` (CSS Modules) — presentational, driven entirely by `BridgeFlowState`
-- [ ] 03-03: `bridge-card.tsx` refactor — wire the orchestration hook, remove `getActionState()` and duplicated hash state, add the single error banner
+- [ ] 03-01-PLAN.md — Tracer: one click drives approve → gated simulate → bridge → receipt → relay-watch in `use-bridge-flow.ts`, with `action-button.tsx` / `spinner.tsx` and the `bridge-card.tsx` refactor that deletes `getActionState()`, the duplicated hash state and the three error paragraphs; plus the D-04 mined-revert replay and the D-08 reset rule (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion; the two plans run in parallel)*
+
+- [ ] 03-02-PLAN.md — `stepper.tsx` (CSS Modules): the always-visible three-step stepper mounted in the hero column, driven entirely by `BridgeFlowState.steps`, plus the degraded-only transport-health pill (wave 2)
+- [ ] 03-03-PLAN.md — FLOW-04 refresh recovery: `flow-storage.ts` with tests, persistence writes at each step transition, and post-mount rehydration that re-derives every confirmation from chain state (wave 2)
+
+*Decomposition differs from the three originally outlined plans. The outline split the phase by layer
+(hook, then components, then card refactor), which under tracer-first decomposition is a horizontal
+layer cake: no single plan would have produced a working path, and the single-derived-state
+architecture would only have been proven after all three landed. Instead 03-01 is one end-to-end
+vertical slice — hook, button, card and page together — so the architecture is proven after one
+commit; the stepper (a second consumer of the same already-proven value) and the persistence layer (a
+second input source for it) then expand from it in parallel, since they share no files.*
 
 ## Progress
 
@@ -124,3 +136,4 @@ Phases execute in numeric order: 1 → 2 → 3
 | 1. Pure Foundation — ABI, Error Mapping & Flow-State Derivation | 0/3 | Not started | - |
 | 2. RPC Transport & Live Event Subscription | 0/4 | Not started | - |
 | 3. Flow Orchestration & UI Integration | 0/3 | Not started | - |
+
