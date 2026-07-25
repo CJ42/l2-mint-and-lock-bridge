@@ -10,7 +10,7 @@
  * decode chain is meant to stay legible as a single file.
  */
 
-import { toFunctionSelector, type Abi, type Hex } from 'viem'
+import { toFunctionSelector, type Abi, type Address, type Hex } from 'viem'
 import { BaseError, ContractFunctionRevertedError } from 'viem'
 import { formatAbiItem } from 'viem/utils'
 
@@ -20,6 +20,7 @@ import {
   syntheticTokenBridgeAbi,
   wrappedTokenAbi,
 } from './generated'
+import { formatTokenAmount } from './bridge'
 
 export type DecodedBridgeErrorKind =
   | 'bridge-custom-error'
@@ -92,8 +93,17 @@ type Decoder = (context: DecodeContext) => DecodedBridgeError | undefined
  * Ordered decode chain, most-specific first, generic fallback last. `decodeBridgeError` walks
  * this list and returns the first match — the terminal branch is total, so a value always comes
  * back and the function never throws.
+ *
+ * Order is load-bearing: `Panic`/`Error` (viem appends both fragments to every ABI automatically
+ * — they are not bridge errors) must be classified before the Tier-1/Tier-2 custom-error tiering,
+ * and the Tier-1 named branch must win over the Tier-2 catch-all.
  */
-const decoders: Decoder[] = [decodeBridgeCustomError]
+const decoders: Decoder[] = [
+  decodePanic,
+  decodeRevertString,
+  decodeBridgeCustomError,
+  decodeUnmappedCustomError,
+]
 
 export function decodeBridgeError({
   error,
@@ -123,9 +133,11 @@ function findRevertedError(
 }
 
 /**
- * The one bridge custom error this task implements. Plan 01-02 appends the remaining named
- * `errorName` branches to this same decoder; every other decoded error name falls through to the
- * generic `decodeUnknown` terminal branch until it is added here.
+ * Tier 1 — bespoke copy (D-06). Every branch below decodes a specific, expected bridge revert
+ * into a plain sentence carrying the real decoded evidence in parentheses. `SafeERC20FailedOperation`
+ * and `ERC20InsufficientAllowance` get their own kinds; every other Tier-1 name uses
+ * `kind: 'bridge-custom-error'`. Any named error that reaches this decoder but matches none of
+ * these branches falls through to `decodeUnmappedCustomError` (Tier 2).
  */
 function decodeBridgeCustomError({
   reverted,
@@ -143,7 +155,149 @@ function decodeBridgeCustomError({
     }
   }
 
+  if (errorName === 'InvalidDestinationChainId') {
+    const [expectedChainId, receivedChainId] = (args ?? []) as [
+      bigint | undefined,
+      bigint | undefined,
+    ]
+    return {
+      kind: 'bridge-custom-error',
+      errorName,
+      message: `This transaction targeted the wrong destination chain (expected chain ${expectedChainId ?? '?'}, received chain ${receivedChainId ?? '?'}).`,
+    }
+  }
+
+  if (errorName === 'InvalidBridgeTxInputs') {
+    const [recipient, amount] = (args ?? []) as [Address | undefined, bigint | undefined]
+    const evidence =
+      recipient !== undefined && amount !== undefined
+        ? ` (recipient ${recipient}, amount ${formatTokenAmount(amount)})`
+        : ''
+    return {
+      kind: 'bridge-custom-error',
+      errorName,
+      message: `The recipient or amount supplied for this transfer is invalid${evidence}.`,
+    }
+  }
+
+  if (errorName === 'SafeERC20FailedOperation') {
+    const token = args?.[0] as Address | undefined
+    return {
+      kind: 'token-operation-failed',
+      errorName,
+      message: `The token transfer failed at the token contract level${token ? ` (token ${token})` : ''}.`,
+    }
+  }
+
+  if (errorName === 'ERC20InsufficientAllowance') {
+    const [, allowance, needed] = (args ?? []) as [
+      Address | undefined,
+      bigint | undefined,
+      bigint | undefined,
+    ]
+    const evidence =
+      allowance !== undefined && needed !== undefined
+        ? ` (current allowance ${formatTokenAmount(allowance)}, needed ${formatTokenAmount(needed)})`
+        : ''
+    return {
+      kind: 'insufficient-allowance',
+      errorName,
+      message: `Your approved allowance is too low for this transfer${evidence}. Please re-run approve and try again.`,
+    }
+  }
+
   return undefined
+}
+
+/**
+ * Tier 2 — one shared message (D-05). Any named custom error that reached this decoder without
+ * matching a Tier-1 branch above resolves here: a short, debuggable sentence naming the real
+ * decoded error. This is a pure fall-through by construction — it never checks any specific error
+ * name, so admin-only/invariant errors this UI can never trigger (including `NotRelayer`) land
+ * here without a dedicated branch, exactly as D-05 requires.
+ */
+function decodeUnmappedCustomError({
+  reverted,
+}: DecodeContext): DecodedBridgeError | undefined {
+  if (!reverted?.data) return undefined
+
+  const { errorName } = reverted.data
+  if (!errorName) return undefined
+
+  return {
+    kind: 'unmapped-custom-error',
+    errorName,
+    message: `Something unexpected happened on-chain (${errorName}).`,
+  }
+}
+
+/**
+ * Standard Solidity `Panic(uint256)` codes, in plain language. Table is our own — not re-derived
+ * from viem's internal `panicReasons` constant, which is not part of viem's public package export
+ * surface (only a fixed subpath allow-list is exported; `viem/constants` is not among them).
+ */
+const PANIC_MESSAGES: Record<number, string> = {
+  1: 'An internal assertion failed unexpectedly',
+  17: 'This operation caused a number to overflow or underflow',
+  18: 'The contract tried to divide or take the modulo of a number by zero',
+  33: "The contract tried to convert a value into an enum type it doesn't support",
+  34: 'The contract read a storage byte array that was encoded incorrectly',
+  49: 'The contract tried to remove an item from an array that was already empty',
+  50: "The contract tried to access an array element that's out of bounds",
+  65: 'The contract tried to allocate more memory than is allowed',
+  81: 'The contract called an internal function variable that was never initialised',
+}
+
+/**
+ * `Panic(uint256)` branch — ERR-07. viem appends the `Panic` fragment to every ABI automatically
+ * (see `decodeErrorResult`), so this is reachable for any bridge call, not just ones this module's
+ * own ABI declares. An undocumented code still resolves to `kind: 'panic'` with a generic
+ * sentence — it never falls through to the generic `unknown` branch.
+ */
+function decodePanic({ reverted }: DecodeContext): DecodedBridgeError | undefined {
+  if (!reverted?.data) return undefined
+  const { errorName, args } = reverted.data
+  if (errorName !== 'Panic') return undefined
+
+  const code = Number((args as [bigint | number] | undefined)?.[0] ?? 0)
+  const hexCode = `0x${code.toString(16).padStart(2, '0')}`
+  const description = PANIC_MESSAGES[code] ?? 'An unexpected internal error occurred in the contract'
+
+  return {
+    kind: 'panic',
+    errorName,
+    message: `${description} (${hexCode}).`,
+  }
+}
+
+const REVERT_STRING_LIMIT = 200
+
+function truncateRevertReason(reason: string): string {
+  return reason.length > REVERT_STRING_LIMIT
+    ? `${reason.slice(0, REVERT_STRING_LIMIT)}...`
+    : reason
+}
+
+/**
+ * Solidity revert-string branch. Bounds the one remaining path by which an attacker-influenceable
+ * payload (a `require(false, "...")`/`revert("...")` reason) reaches user-facing copy (T-02-02).
+ */
+function decodeRevertString({ reverted }: DecodeContext): DecodedBridgeError | undefined {
+  if (!reverted) return undefined
+
+  const errorName = reverted.data?.errorName
+  if (errorName && errorName !== 'Error') return undefined
+  if (!errorName && !reverted.reason) return undefined
+
+  const reason =
+    errorName === 'Error'
+      ? ((reverted.data?.args as [string] | undefined)?.[0] ?? reverted.reason ?? '')
+      : (reverted.reason ?? '')
+
+  return {
+    kind: 'revert-string',
+    message: `The transaction reverted: "${truncateRevertReason(reason)}".`,
+  }
 }
 
 /**
