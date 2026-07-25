@@ -11,7 +11,7 @@ import {
 import { arbitrumSepolia, baseSepolia } from 'viem/chains'
 
 import type { BridgeMessage } from '@/lib/bridge'
-import { bridgeFinalizedEvent, bridgeInitiatedEvent } from '@/lib/bridge-events'
+import { bridgeFinalizedEvent, bridgeTxInitiatedEvent } from '@/lib/bridge-events'
 import { addresses, scanConfiguration } from '@/lib/config'
 import { baseLiveClient, arbitrumLiveClient } from '@/lib/live-clients'
 
@@ -100,7 +100,7 @@ async function scanChain<TTransport extends Transport, TChain extends Chain>({
     const [initiatedLogs, finalizedLogs] = await Promise.all([
       client.getLogs({
         address: bridgeAddress,
-        event: bridgeInitiatedEvent,
+        event: bridgeTxInitiatedEvent,
         fromBlock: chunkStart,
         toBlock: chunkEnd,
         strict: true,
@@ -205,8 +205,8 @@ function watchChainEvents({
 
   const unwatchInitiated = client.watchContractEvent({
     address: bridgeAddress,
-    abi: [bridgeInitiatedEvent],
-    eventName: 'BridgeInitiated',
+    abi: [bridgeTxInitiatedEvent],
+    eventName: 'BridgeTxInitiated',
     onLogs: () => onUpdate(),
     onError: () => onUpdate(),
   })

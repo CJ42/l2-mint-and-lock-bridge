@@ -2,7 +2,7 @@
 pragma solidity ^0.8.27;
 
 interface IBridge {
-    event BridgeInitiated(
+    event BridgeTxInitiated(
         bytes32 indexed messageId,
         address indexed sender,
         address indexed recipient,

@@ -105,7 +105,7 @@ Properties this must satisfy (assert in tests):
 - Events (identical signatures on both contracts so the relayer and UI share one ABI):
 
 ```solidity
-event BridgeInitiated(bytes32 indexed messageId, address indexed sender,
+event BridgeTxInitiated(bytes32 indexed messageId, address indexed sender,
     address indexed recipient, uint256 amount, uint256 nonce,
     uint256 originChainId, uint256 destinationChainId);
 
@@ -120,15 +120,15 @@ event BridgeFinalized(bytes32 indexed messageId, address indexed recipient, uint
 constructor(IERC20 usdc, uint256 destinationChainId_)
 
 /// user entrypoint — origin direction Base → Arb
-function lock(address recipient, uint256 amount) external whenNotPaused {
+function bridgeTx(address recipient, uint256 amount) external whenNotPaused {
     // checks: amount > 0, recipient != address(0)
     // effects: build BridgeMessage with nonces[msg.sender]++, compute id
     // interactions: usdc.safeTransferFrom(msg.sender, address(this), amount)
-    // emit BridgeInitiated
+    // emit BridgeTxInitiated
 }
 
 /// relayer entrypoint — finalises Arb → Base (burn happened on Arb)
-function unlock(BridgeMessage calldata m) external onlyRelayer whenNotPaused {
+function finalizeBridgeTx(BridgeMessage calldata m) external onlyRelayer whenNotPaused {
     // require m.destinationChainId == block.chainid
     // require !processed[id]; processed[id] = true;
     // usdc.safeTransfer(m.recipient, m.amount)
@@ -142,15 +142,15 @@ function unlock(BridgeMessage calldata m) external onlyRelayer whenNotPaused {
 constructor(WrappedUSDC wusdc, uint256 originChainId_)
 
 /// relayer entrypoint — finalises Base → Arb
-function mint(BridgeMessage calldata m) external onlyRelayer whenNotPaused {
-    // same guards as unlock; wusdc.mint(m.recipient, m.amount); emit BridgeFinalized
+function finalizeBridgeTx(BridgeMessage calldata m) external onlyRelayer whenNotPaused {
+    // validate and consume message; wusdc.mint(m.recipient, m.amount); emit BridgeFinalized
 }
 
 /// user entrypoint — initiates Arb → Base return path
-function burn(address recipient, uint256 amount) external whenNotPaused {
+function bridgeTx(address recipient, uint256 amount) external whenNotPaused {
     // build message with nonces[msg.sender]++ (origin = Arbitrum Sepolia)
     // wusdc.burnFrom(msg.sender, amount)   // requires approval, or burn via allowance pattern
-    // emit BridgeInitiated
+    // emit BridgeTxInitiated
 }
 ```
 
@@ -170,19 +170,19 @@ Equality holds when no messages are in flight. This is the one-sentence security
 ## 4. Message lifecycle
 
 ```
-Base → Arb:  user approve → lock() → BridgeInitiated(Base)
-             → relayer waits 5 confirmations → mint() on Arb
+Base → Arb:  user approve → bridgeTx() → BridgeTxInitiated(Base)
+             → relayer waits 5 confirmations → finalizeBridgeTx() on Arb
              → BridgeFinalized(Arb) → user holds wUSDC
 
-Arb → Base:  user approve wUSDC → burn() → BridgeInitiated(Arb)
-             → relayer waits 5 confirmations → unlock() on Base
+Arb → Base:  user approve wUSDC → bridgeTx() → BridgeTxInitiated(Arb)
+             → relayer waits 5 confirmations → finalizeBridgeTx() on Base
              → BridgeFinalized(Base) → user holds USDC
 ```
 
 UI status model (derived purely from events, keyed by `messageId`):
-`Initiated` (BridgeInitiated seen) → `Finalized` (BridgeFinalized seen on the other chain). A message that stays `Initiated` beyond ~2 min renders as `Pending — relaying`.
+`Initiated` (BridgeTxInitiated seen) → `Finalized` (BridgeFinalized seen on the other chain). A message that stays `Initiated` beyond ~2 min renders as `Pending — relaying`.
 
-**Documented cut — finalise-revert handling:** if `mint`/`unlock` reverts permanently (e.g. paused destination), funds are stuck on the origin side. Production design: relayer marks the message failed after N retries and the origin contract exposes a `refund(BridgeMessage)` path gated on a relayer-attested failure proof, or a timeout-based user reclaim. Not implemented — README explains why (attested-failure design is where most bridge complexity and most bridge exploits live; out of scope for one day).
+**Documented cut — finalise-revert handling:** if `finalizeBridgeTx` reverts permanently (e.g. paused destination), funds are stuck on the origin side. Production design: relayer marks the message failed after N retries and the origin contract exposes a `refund(BridgeMessage)` path gated on a relayer-attested failure proof, or a timeout-based user reclaim. Not implemented — README explains why (attested-failure design is where most bridge complexity and most bridge exploits live; out of scope for one day).
 
 ---
 
@@ -195,7 +195,7 @@ Single process, two watcher loops (one per chain), one submitter per direction.
 **Watcher (per chain):**
 1. On start, load `lastProcessedBlock` from `state.json` (default: deploy block).
 2. Every poll: `latest = getBlockNumber()`; `safeHead = latest - CONFIRMATIONS`.
-3. `getLogs({ event: BridgeInitiated, fromBlock: lastProcessedBlock + 1, toBlock: safeHead })` — cap ranges at 2,000 blocks per call to respect RPC limits.
+3. `getLogs({ event: BridgeTxInitiated, fromBlock: lastProcessedBlock + 1, toBlock: safeHead })` — cap ranges at 2,000 blocks per call to respect RPC limits.
 4. Enqueue each log for the opposite chain's submitter; update and persist `lastProcessedBlock = safeHead`.
 
 Confirmation depth is the reorg story: the relayer only ever reads `CONFIRMATIONS` behind head, so a shallow reorg on the origin chain cannot cause a mint for a lock that disappeared. Document that 5 is a testnet-friendly constant; production would use finalized tags / L1 batch confirmation.
@@ -206,7 +206,7 @@ Confirmation depth is the reorg story: the relayer only ever reads `CONFIRMATION
 3. Simulate (`simulateContract`) then send. On failure: exponential backoff `1s → 2s → 4s → … max 60s`, max 8 attempts, then log the message as failed and continue (do not block the queue).
 4. Log every transition as structured JSON lines: `{messageId, direction, status, txHash}` — this doubles as the demo narration.
 
-**`// TODO(fees)`** at the submitter: production design — `lock()` becomes payable, requiring `msg.value ≥ quoteDestinationGas()`; relayer withdraws accumulated fees; quote served off-chain by the relayer and enforced on-chain against a stored per-message fee floor.
+**`// TODO(fees)`** at the submitter: production design — `bridgeTx()` becomes payable, requiring `msg.value ≥ quoteDestinationGas()`; relayer withdraws accumulated fees; quote served off-chain by the relayer and enforced on-chain against a stored per-message fee floor.
 
 **Explicitly out of scope:** websockets (polling is more robust on public RPCs), database (JSON checkpoint suffices for one relayer), gas-price management beyond viem defaults, multi-relayer coordination.
 
@@ -225,7 +225,7 @@ One page, two zones.
   Implemented with `useWriteContract` + `useWaitForTransactionReceipt` + the message-status hook. Skip the approve step when allowance is sufficient.
 
 **Zone 2 — MessageExplorer (mini Hyperlane explorer)**
-- `useBridgeMessages` hook: on mount and every 6s, `getLogs` for `BridgeInitiated` and `BridgeFinalized` on **both** chains over the last ~50k blocks (chunked), join by `messageId`.
+- `useBridgeMessages` hook: on mount and every 6s, `getLogs` for `BridgeTxInitiated` and `BridgeFinalized` on **both** chains over the last ~50k blocks (chunked), join by `messageId`.
 - Table: short `messageId`, direction (Base→Arb / Arb→Base), amount, recipient (truncated), status badge (`Pending` amber / `Finalized` green), age, and two links: origin tx and destination tx (Basescan / Arbiscan Sepolia).
 - Newest first; the user's own in-flight message highlighted.
 - No backend, no indexer service — the UI is its own indexer. Document this as a deliberate choice (zero infra) with the honest limitation (block-range scans don't scale; production uses the relayer's API or an indexer).
@@ -240,13 +240,13 @@ Priority order — stop when time runs out, never skip tier 1:
 
 **Tier 1 — unit (`BridgeUnit.t.sol`, `Replay.t.sol`)**
 - messageId: chain-pair separation, nonce separation, encode-collision sanity.
-- lock: nonce increments, event fields exact, USDC pulled (mock ERC20 here).
-- mint/unlock: replay rejected (`processed`), wrong `destinationChainId` rejected, non-relayer rejected, paused rejected.
-- burn: supply decreases, event correct.
+- collateral `bridgeTx`: nonce increments, event fields exact, USDC pulled (mock ERC20 here).
+- `finalizeBridgeTx`: replay rejected (`processed`), wrong `destinationChainId` rejected, non-relayer rejected, paused rejected.
+- synthetic `bridgeTx`: supply decreases, event correct.
 - Access control: relayer rotation, `Ownable2Step` handover, pause/unpause gating every entrypoint.
 
 **Tier 2 — nice-to-have**
-- Invariant test: handler doing random lock/mint/burn/unlock sequences; assert `usdc.balanceOf(collateralTokenBridge) ≥ wusdc.totalSupply()` after each settled batch.
+- Invariant test: handler doing random `bridgeTx`/`finalizeBridgeTx` sequences; assert `usdc.balanceOf(collateralTokenBridge) ≥ wusdc.totalSupply()` after each settled batch.
 
 *Deferred (see §9):* Base Sepolia fork test exercising the real deployed USDC via `vm.createSelectFork`. The testnet smoke test (§8 step 6) covers the real-USDC path in the meantime.
 
@@ -268,12 +268,12 @@ Priority order — stop when time runs out, never skip tier 1:
 | Cut | Why | Production direction |
 |---|---|---|
 | Relayer signature verification on-chain | Time; trust model is explicitly single-relayer for this exercise | EIP-712 signed messages, n-of-m attestations, key rotation |
-| Fee / interchain gas payment | Meaningful surface across all three components | Payable `lock` with enforced fee floor; relayer quotes + withdraws |
+| Fee / interchain gas payment | Meaningful surface across all three components | Payable `bridgeTx` with enforced fee floor; relayer quotes + withdraws |
 | Finalise-revert / stuck-funds recovery | The hardest part of bridge design; where real bridges get exploited | Attested-failure refund path or timeout reclaim |
 | Rate limits / per-tx caps | Low value on testnet | Per-block and per-message caps, as in production token bridges |
 | Rebalancing / third chain | Requires liquidity model, not just message passing | Router/gateway registry per asset & chain (Arbitrum-style) |
 | Indexer service for the explorer | Zero-infra UI wins for a take-home | Relayer exposes its ledger over HTTP, or a proper indexer |
-| Fork tests against real USDC | Unit tests + live testnet smoke test cover the path; fork setup deferred | `vm.createSelectFork(BASE_SEPOLIA_RPC)` test of approve → lock against deployed USDC bytecode |
+| Fork tests against real USDC | Unit tests + live testnet smoke test cover the path; fork setup deferred | `vm.createSelectFork(BASE_SEPOLIA_RPC)` test of approve → `bridgeTx` against deployed USDC bytecode |
 
 ---
 
@@ -286,7 +286,7 @@ Priority order — stop when time runs out, never skip tier 1:
 | 3 | Tier-1 unit tests green | 1.5 h |
 | 4 | Deploy scripts + deploy to both testnets + wire roles + faucet USDC | 1 h |
 | 5 | Relayer: config → watcher → submitter → checkpoint → **first end-to-end bridge via CLI** | 2.5 h |
-| 6 | UI BridgeCard: connect, approve, lock, button state machine, both directions | 2.5 h |
+| 6 | UI BridgeCard: connect, approve, `bridgeTx`, button state machine, both directions | 2.5 h |
 | 7 | MessageExplorer + status hook | 1.5 h |
 | 8 | README (skeleton §11), screenshots, repo tidy, CLAUDE.md commit | 1 h |
 | — | *Cut line — below only if ahead of schedule* | |

@@ -90,8 +90,8 @@ import styles from './bridge-card.module.css'
 - Validation is done in separate functions like `_validateInputs()` before state changes
 
 **TypeScript Patterns:**
-- Throw `new Error()` with descriptive messages: `throw new Error("BridgeInitiated log is missing required arguments")`
-- Validation errors include context: `throw new Error(\`BridgeInitiated messageId mismatch: emitted ${args.messageId}, computed ${computedMessageId}\`)`
+- Throw `new Error()` with descriptive messages: `throw new Error("BridgeTxInitiated log is missing required arguments")`
+- Validation errors include context: `throw new Error(\`BridgeTxInitiated messageId mismatch: emitted ${args.messageId}, computed ${computedMessageId}\`)`
 - In React components, set state for errors: `setFormError(...)` or return error in custom hook result: `{ messages, isLoading, error: string | null, ... }`
 - Relayer: Use structured JSON logging with error status
 

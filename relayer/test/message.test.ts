@@ -4,7 +4,7 @@ import { canonicalUsdcAddress } from "../src/config"
 import {
   hashBridgeMessage,
   reconstructMessage,
-  type BridgeInitiatedLog,
+  type BridgeTxInitiatedLog,
   type BridgeMessage,
 } from "../src/message"
 
@@ -64,7 +64,7 @@ function createLog({
 }: {
   message: BridgeMessage
   messageId: Hex
-}): BridgeInitiatedLog {
+}): BridgeTxInitiatedLog {
   return {
     address: "0x3333333333333333333333333333333333333333" as Address,
     args: {

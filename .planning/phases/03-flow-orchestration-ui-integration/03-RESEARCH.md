@@ -266,7 +266,7 @@ step in this phase.
 
 A user's primary path traces top-to-bottom-left-to-right: click in `<BridgeCard>` →
 `use-bridge-flow.ts`'s `runFlow()` → wagmi actions hit the origin chain → on success `messageId` is
-extracted from the bridge receipt's `BridgeInitiated` log → `useRelayStatus` picks it up and watches
+extracted from the bridge receipt's `BridgeTxInitiated` log → `useRelayStatus` picks it up and watches
 the destination chain → `deriveFlowState()` combines both into one `BridgeFlowState` → `<Stepper>`
 and `<ActionButton>` both re-render off that single value.
 

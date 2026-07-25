@@ -89,7 +89,7 @@ describe('decodeBridgeError', () => {
     const reverted = new ContractFunctionRevertedError({
       abi: bridgeErrorAbi,
       data: unknownSelector,
-      functionName: 'lock',
+      functionName: 'bridgeTx',
     })
 
     const result = decodeBridgeError({ error: reverted })
@@ -344,7 +344,7 @@ describe('decodeBridgeError — empty revert data (out-of-gas)', () => {
     const reverted = new ContractFunctionRevertedError({
       abi: bridgeErrorAbi,
       data: '0x',
-      functionName: 'lock',
+      functionName: 'bridgeTx',
     })
 
     const result = decodeBridgeError({ error: reverted })
@@ -355,7 +355,7 @@ describe('decodeBridgeError — empty revert data (out-of-gas)', () => {
   test('raw undefined with no decoded data resolves identically to raw "0x"', () => {
     const reverted = new ContractFunctionRevertedError({
       abi: bridgeErrorAbi,
-      functionName: 'lock',
+      functionName: 'bridgeTx',
     })
 
     const result = decodeBridgeError({ error: reverted })
@@ -367,7 +367,7 @@ describe('decodeBridgeError — empty revert data (out-of-gas)', () => {
     const reverted = new ContractFunctionRevertedError({
       abi: bridgeErrorAbi,
       data: '0X' as unknown as Hex,
-      functionName: 'lock',
+      functionName: 'bridgeTx',
     })
 
     const result = decodeBridgeError({ error: reverted })
@@ -530,7 +530,7 @@ const KIND_FIXTURES: Record<DecodedBridgeErrorKind, DecodeBridgeErrorInput> = {
     error: new ContractFunctionRevertedError({
       abi: bridgeErrorAbi,
       data: '0x',
-      functionName: 'lock',
+      functionName: 'bridgeTx',
     }),
   },
   panic: { error: createPanicRevert(17n) },
@@ -539,7 +539,7 @@ const KIND_FIXTURES: Record<DecodedBridgeErrorKind, DecodeBridgeErrorInput> = {
     error: new ContractFunctionRevertedError({
       abi: bridgeErrorAbi,
       data: '0xdeadbeef' as Hex,
-      functionName: 'lock',
+      functionName: 'bridgeTx',
     }),
   },
 }
@@ -605,7 +605,7 @@ function createRevertedError({
   return new ContractFunctionRevertedError({
     abi: bridgeErrorAbi,
     data,
-    functionName: 'mint',
+    functionName: 'finalizeBridgeTx',
   })
 }
 
@@ -619,7 +619,7 @@ function createPanicRevert(code: bigint): ContractFunctionRevertedError {
   return new ContractFunctionRevertedError({
     abi: bridgeErrorAbi,
     data,
-    functionName: 'lock',
+    functionName: 'bridgeTx',
   })
 }
 
@@ -633,7 +633,7 @@ function createErrorStringRevert(reason: string): ContractFunctionRevertedError 
   return new ContractFunctionRevertedError({
     abi: bridgeErrorAbi,
     data,
-    functionName: 'lock',
+    functionName: 'bridgeTx',
   })
 }
 

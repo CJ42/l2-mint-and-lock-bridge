@@ -1,6 +1,6 @@
 import { createPublicClient, createWalletClient } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
-import { bridgeAbi, bridgeInitiatedEvent } from "./abi"
+import { bridgeAbi, bridgeTxInitiatedEvent } from "./abi"
 import {
   canonicalUsdcAddress,
   chains,
@@ -9,7 +9,7 @@ import {
   type RelayerConfig,
 } from "./config"
 import { logJson } from "./logger"
-import { reconstructMessage, type BridgeInitiatedLog } from "./message"
+import { reconstructMessage, type BridgeTxInitiatedLog } from "./message"
 import { createStateStore } from "./state"
 import { createSubmitter, type Submission } from "./submitter"
 import { runWatcher } from "./watcher"
@@ -58,7 +58,7 @@ export async function main(): Promise<void> {
           account,
           address: config.bridgeAddresses.arbitrumSepolia,
           abi: bridgeAbi,
-          functionName: "mint",
+          functionName: "finalizeBridgeTx",
           args: [message],
         })
         return simulation.request
@@ -84,7 +84,7 @@ export async function main(): Promise<void> {
           account,
           address: config.bridgeAddresses.baseSepolia,
           abi: bridgeAbi,
-          functionName: "unlock",
+          functionName: "finalizeBridgeTx",
           args: [message],
         })
         return simulation.request
@@ -111,12 +111,12 @@ export async function main(): Promise<void> {
         getInitiatedLogs: async ({ fromBlock, toBlock }) => {
           const logs = await basePublicClient.getLogs({
             address: config.bridgeAddresses.baseSepolia,
-            event: bridgeInitiatedEvent,
+            event: bridgeTxInitiatedEvent,
             fromBlock,
             toBlock,
             strict: true,
           })
-          return logs as unknown as readonly BridgeInitiatedLog[]
+          return logs as unknown as readonly BridgeTxInitiatedLog[]
         },
       },
       confirmations: config.confirmations,
@@ -137,12 +137,12 @@ export async function main(): Promise<void> {
         getInitiatedLogs: async ({ fromBlock, toBlock }) => {
           const logs = await arbitrumPublicClient.getLogs({
             address: config.bridgeAddresses.arbitrumSepolia,
-            event: bridgeInitiatedEvent,
+            event: bridgeTxInitiatedEvent,
             fromBlock,
             toBlock,
             strict: true,
           })
-          return logs as unknown as readonly BridgeInitiatedLog[]
+          return logs as unknown as readonly BridgeTxInitiatedLog[]
         },
       },
       confirmations: config.confirmations,
@@ -170,7 +170,7 @@ function createLogHandler({
   config: RelayerConfig
   direction: Direction
   enqueue: (submission: Submission) => void
-}): (log: BridgeInitiatedLog) => void {
+}): (log: BridgeTxInitiatedLog) => void {
   const expectedOriginChainId =
     direction === "base-to-arbitrum"
       ? BigInt(chains.baseSepolia.id)
@@ -180,7 +180,7 @@ function createLogHandler({
       ? BigInt(chains.arbitrumSepolia.id)
       : BigInt(chains.baseSepolia.id)
 
-  return function handleLog(log: BridgeInitiatedLog): void {
+  return function handleLog(log: BridgeTxInitiatedLog): void {
     const expectedSourceAddress =
       direction === "base-to-arbitrum"
         ? config.bridgeAddresses.baseSepolia

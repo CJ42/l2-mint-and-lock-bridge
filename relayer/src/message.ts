@@ -16,7 +16,7 @@ export interface BridgeMessage {
   nonce: bigint
 }
 
-export interface BridgeInitiatedLog {
+export interface BridgeTxInitiatedLog {
   address: Address
   args: {
     messageId?: Hex
@@ -36,7 +36,7 @@ export function reconstructMessage({
   log,
   canonicalToken,
 }: {
-  log: BridgeInitiatedLog
+  log: BridgeTxInitiatedLog
   canonicalToken: Address
 }): { message: BridgeMessage; messageId: Hex } {
   const { args } = log
@@ -49,7 +49,7 @@ export function reconstructMessage({
     args.originChainId === undefined ||
     args.destinationChainId === undefined
   )
-    throw new Error("BridgeInitiated log is missing required arguments")
+    throw new Error("BridgeTxInitiated log is missing required arguments")
 
   const message: BridgeMessage = {
     originChainId: args.originChainId,
@@ -63,7 +63,7 @@ export function reconstructMessage({
   const computedMessageId = hashBridgeMessage({ message })
   if (computedMessageId.toLowerCase() !== args.messageId.toLowerCase())
     throw new Error(
-      `BridgeInitiated messageId mismatch: emitted ${args.messageId}, computed ${computedMessageId}`,
+      `BridgeTxInitiated messageId mismatch: emitted ${args.messageId}, computed ${computedMessageId}`,
     )
 
   return { message, messageId: computedMessageId }

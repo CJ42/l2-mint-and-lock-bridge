@@ -22,7 +22,6 @@ export interface BridgeDirection {
   originName: string
   destinationName: string
   tokenSymbol: 'USDC' | 'wUSDC'
-  action: 'lock' | 'burn'
 }
 
 export interface ChainMeta {
@@ -54,7 +53,6 @@ export const directions: Record<'baseToArbitrum' | 'arbitrumToBase', BridgeDirec
     originName: 'Base Sepolia',
     destinationName: 'Arbitrum Sepolia',
     tokenSymbol: 'USDC',
-    action: 'lock',
   },
   arbitrumToBase: {
     originChainId: arbitrumSepolia.id,
@@ -62,7 +60,6 @@ export const directions: Record<'baseToArbitrum' | 'arbitrumToBase', BridgeDirec
     originName: 'Arbitrum Sepolia',
     destinationName: 'Base Sepolia',
     tokenSymbol: 'wUSDC',
-    action: 'burn',
   },
 }
 

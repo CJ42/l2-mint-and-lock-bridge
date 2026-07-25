@@ -6,7 +6,7 @@ Review with the mindset of a senior smart contract auditor and a demanding front
 
 ## Project context
 
-- **Architecture:** `CollateralTokenBridge.sol` on Base Sepolia locks USDC; a trusted relayer observes `BridgeInitiated` events and calls `SyntheticTokenBridge.sol` on Arbitrum Sepolia to mint `wUSDC`. The return path burns `wUSDC` on Arbitrum Sepolia and unlocks USDC on Base Sepolia.
+- **Architecture:** `CollateralTokenBridge.sol` on Base Sepolia locks USDC; a trusted relayer observes `BridgeTxInitiated` events and calls `SyntheticTokenBridge.sol` on Arbitrum Sepolia to mint `wUSDC`. The return path burns `wUSDC` on Arbitrum Sepolia and unlocks USDC on Base Sepolia.
 - **Token:** Circle testnet USDC on Base Sepolia (`0x036CbD53842c5426634e7929541eC2318f3dCF7e`). **USDC and wUSDC use 6 decimals.**
 - **Message identity:** `messageId = keccak256(abi.encode(originChainId, destinationChainId, token, sender, recipient, amount, nonce))` with a per-sender nonce assigned at the origin, and a `processed` mapping on the finalising side.
 - **Core invariant:** USDC locked in `CollateralTokenBridge` must always be ≥ total supply of `wUSDC` (equality when no messages are in flight).

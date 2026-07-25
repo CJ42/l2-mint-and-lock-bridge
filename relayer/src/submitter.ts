@@ -77,7 +77,7 @@ export async function submitMessage({
       logTransition({ log, direction, submission, status: "simulating", attempt })
       const request = await actions.simulate({ message: submission.message })
 
-      // TODO(fees): Production lock() would be payable against an on-chain fee floor
+      // TODO(fees): Production bridgeTx() would be payable against an on-chain fee floor
       // quoted by the relayer, which could withdraw accumulated destination gas fees.
       const txHash = await actions.write({ request })
       logTransition({ log, direction, submission, status: "submitted", attempt, txHash })

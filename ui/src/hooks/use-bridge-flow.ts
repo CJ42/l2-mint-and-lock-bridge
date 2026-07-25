@@ -50,9 +50,9 @@ import {
   syntheticTokenBridgeAbi,
 } from '@/lib/generated'
 
-const bridgeAbiByAction = {
-  lock: collateralTokenBridgeAbi,
-  burn: syntheticTokenBridgeAbi,
+const bridgeAbiByDirection = {
+  baseToArbitrum: collateralTokenBridgeAbi,
+  arbitrumToBase: syntheticTokenBridgeAbi,
 } as const
 
 const idleProgress: TransactionProgress = {
@@ -250,9 +250,9 @@ export function useBridgeFlow({
 
       try {
         await simulateContract(config, {
-          abi: bridgeAbiByAction[direction.action],
+          abi: bridgeAbiByDirection[directionKey],
           address: bridgeAddress,
-          functionName: direction.action,
+          functionName: 'bridgeTx',
           args: [recipient, amount],
           chainId: direction.originChainId,
           account: address,
@@ -269,9 +269,9 @@ export function useBridgeFlow({
       let nextBridgeHash: Hex
       try {
         nextBridgeHash = await writeContract(config, {
-          abi: bridgeAbiByAction[direction.action],
+          abi: bridgeAbiByDirection[directionKey],
           address: bridgeAddress,
-          functionName: direction.action,
+          functionName: 'bridgeTx',
           args: [recipient, amount],
           chainId: direction.originChainId,
           account: address,
@@ -308,8 +308,8 @@ export function useBridgeFlow({
       }
 
       const initiatedLogs = parseEventLogs({
-        abi: bridgeAbiByAction[direction.action],
-        eventName: 'BridgeInitiated',
+        abi: bridgeAbiByDirection[directionKey],
+        eventName: 'BridgeTxInitiated',
         logs: receipt.logs,
       })
       const nextMessageId = initiatedLogs[0]?.args.messageId
@@ -318,7 +318,7 @@ export function useBridgeFlow({
         setFailure({
           kind: 'unknown',
           message:
-            'Bridge transaction mined but no BridgeInitiated event was found in the receipt.',
+            'Bridge transaction mined but no BridgeTxInitiated event was found in the receipt.',
         })
         clearPersistedFlow({ address })
         return
@@ -341,7 +341,6 @@ export function useBridgeFlow({
     balance,
     bridgeAddress,
     config,
-    direction.action,
     direction.originChainId,
     directionKey,
     recipient,
@@ -444,8 +443,8 @@ export function useBridgeFlow({
           }
 
           const initiatedLogs = parseEventLogs({
-            abi: bridgeAbiByAction[directions[record.directionKey].action],
-            eventName: 'BridgeInitiated',
+            abi: bridgeAbiByDirection[record.directionKey],
+            eventName: 'BridgeTxInitiated',
             logs: receipt.logs,
           })
           const restoredMessageId = initiatedLogs[0]?.args.messageId

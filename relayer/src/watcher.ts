@@ -1,6 +1,6 @@
 import type { ChainKey } from "./config"
 import type { Log } from "./logger"
-import type { BridgeInitiatedLog } from "./message"
+import type { BridgeTxInitiatedLog } from "./message"
 import type { StateStore } from "./state"
 
 export interface WatcherClient {
@@ -11,7 +11,7 @@ export interface WatcherClient {
   }: {
     fromBlock: bigint
     toBlock: bigint
-  }) => Promise<readonly BridgeInitiatedLog[]>
+  }) => Promise<readonly BridgeTxInitiatedLog[]>
 }
 
 export interface WatcherOptions {
@@ -20,7 +20,7 @@ export interface WatcherOptions {
   confirmations: bigint
   pollIntervalMs: number
   state: StateStore
-  onLog: (log: BridgeInitiatedLog) => void
+  onLog: (log: BridgeTxInitiatedLog) => void
   log: Log
   signal?: AbortSignal
 }

@@ -212,7 +212,7 @@ what those phases produced into the UI.
   relaying, idle).
 - `parseAmount()` / `parseRecipient()` / `validateBridge()` (lines 435–467) are already pure and
   6-decimal-correct; move them with the input state into the hook rather than rewriting.
-- The `parseEventLogs` → `BridgeInitiated` → `messageId` extraction in the `useEffect` at lines
+- The `parseEventLogs` → `BridgeTxInitiated` → `messageId` extraction in the `useEffect` at lines
   128–138 is exactly how the flow learns its `messageId` for the relay-watch step; it moves into
   the hook and its ABI import moves to Phase 1's generated file.
 - `ui/src/components/bridge-card.module.css` `.action` — existing button styling to extend rather

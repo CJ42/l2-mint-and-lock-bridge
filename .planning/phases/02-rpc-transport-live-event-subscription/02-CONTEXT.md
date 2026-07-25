@@ -152,7 +152,7 @@ reverts (Phase 1) — it only consumes the event fragments Phase 1's generated A
 ### Upstream phase dependency
 - `.planning/phases/01-pure-foundation-abi-error-mapping-flow-state-derivation/01-CONTEXT.md` —
   Phase 1's locked ABI-generation decisions (D-01 through D-04 there). This phase reads the
-  `BridgeInitiated` / `BridgeFinalized` **event** fragments from Phase 1's generated
+  `BridgeTxInitiated` / `BridgeFinalized` **event** fragments from Phase 1's generated
   `ui/src/lib/generated.ts`; note D-04 there, which explains that per-contract named ABI exports
   are what the generator emits.
 
@@ -166,7 +166,7 @@ reverts (Phase 1) — it only consumes the event fragments Phase 1's generated A
   chain. **Whether `webSocket()` is added here too is an open question** (see `<deferred>`)
 
 ### Contracts (event source of truth)
-- `contracts/src/IBridge.sol` — the `BridgeInitiated` / `BridgeFinalized` event definitions
+- `contracts/src/IBridge.sol` — the `BridgeTxInitiated` / `BridgeFinalized` event definitions
   (verified: both are declared here, not in `BridgeBase.sol`)
 - `contracts/src/BridgeBase.sol` — the `processed[messageId]` mapping and `_consumeMessage()`
   semantics that make `messageId` the correct dedupe key for LIVE-08

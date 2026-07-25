@@ -46,7 +46,33 @@ export const collateralTokenBridgeAbi = [
       { name: 'recipient', internalType: 'address', type: 'address' },
       { name: 'amount', internalType: 'uint256', type: 'uint256' },
     ],
-    name: 'lock',
+    name: 'bridgeTx',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      {
+        name: 'message',
+        internalType: 'struct BridgeMessage',
+        type: 'tuple',
+        components: [
+          { name: 'originChainId', internalType: 'uint256', type: 'uint256' },
+          {
+            name: 'destinationChainId',
+            internalType: 'uint256',
+            type: 'uint256',
+          },
+          { name: 'token', internalType: 'address', type: 'address' },
+          { name: 'sender', internalType: 'address', type: 'address' },
+          { name: 'recipient', internalType: 'address', type: 'address' },
+          { name: 'amount', internalType: 'uint256', type: 'uint256' },
+          { name: 'nonce', internalType: 'uint256', type: 'uint256' },
+        ],
+      },
+    ],
+    name: 'finalizeBridgeTx',
     outputs: [],
     stateMutability: 'nonpayable',
   },
@@ -117,32 +143,6 @@ export const collateralTokenBridgeAbi = [
     type: 'function',
     inputs: [{ name: 'newOwner', internalType: 'address', type: 'address' }],
     name: 'transferOwnership',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [
-      {
-        name: 'message',
-        internalType: 'struct BridgeMessage',
-        type: 'tuple',
-        components: [
-          { name: 'originChainId', internalType: 'uint256', type: 'uint256' },
-          {
-            name: 'destinationChainId',
-            internalType: 'uint256',
-            type: 'uint256',
-          },
-          { name: 'token', internalType: 'address', type: 'address' },
-          { name: 'sender', internalType: 'address', type: 'address' },
-          { name: 'recipient', internalType: 'address', type: 'address' },
-          { name: 'amount', internalType: 'uint256', type: 'uint256' },
-          { name: 'nonce', internalType: 'uint256', type: 'uint256' },
-        ],
-      },
-    ],
-    name: 'unlock',
     outputs: [],
     stateMutability: 'nonpayable',
   },
@@ -225,7 +225,7 @@ export const collateralTokenBridgeAbi = [
         indexed: false,
       },
     ],
-    name: 'BridgeInitiated',
+    name: 'BridgeTxInitiated',
   },
   {
     type: 'event',
@@ -508,7 +508,7 @@ export const syntheticTokenBridgeAbi = [
       { name: 'recipient', internalType: 'address', type: 'address' },
       { name: 'amount', internalType: 'uint256', type: 'uint256' },
     ],
-    name: 'burn',
+    name: 'bridgeTx',
     outputs: [],
     stateMutability: 'nonpayable',
   },
@@ -534,7 +534,7 @@ export const syntheticTokenBridgeAbi = [
         ],
       },
     ],
-    name: 'mint',
+    name: 'finalizeBridgeTx',
     outputs: [],
     stateMutability: 'nonpayable',
   },
@@ -696,7 +696,7 @@ export const syntheticTokenBridgeAbi = [
         indexed: false,
       },
     ],
-    name: 'BridgeInitiated',
+    name: 'BridgeTxInitiated',
   },
   {
     type: 'event',
@@ -1139,12 +1139,21 @@ export const useWriteCollateralTokenBridgeAcceptOwnership =
   })
 
 /**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link collateralTokenBridgeAbi}__ and `functionName` set to `"lock"`
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link collateralTokenBridgeAbi}__ and `functionName` set to `"bridgeTx"`
  */
-export const useWriteCollateralTokenBridgeLock =
+export const useWriteCollateralTokenBridgeBridgeTx =
   /*#__PURE__*/ createUseWriteContract({
     abi: collateralTokenBridgeAbi,
-    functionName: 'lock',
+    functionName: 'bridgeTx',
+  })
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link collateralTokenBridgeAbi}__ and `functionName` set to `"finalizeBridgeTx"`
+ */
+export const useWriteCollateralTokenBridgeFinalizeBridgeTx =
+  /*#__PURE__*/ createUseWriteContract({
+    abi: collateralTokenBridgeAbi,
+    functionName: 'finalizeBridgeTx',
   })
 
 /**
@@ -1184,15 +1193,6 @@ export const useWriteCollateralTokenBridgeTransferOwnership =
   })
 
 /**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link collateralTokenBridgeAbi}__ and `functionName` set to `"unlock"`
- */
-export const useWriteCollateralTokenBridgeUnlock =
-  /*#__PURE__*/ createUseWriteContract({
-    abi: collateralTokenBridgeAbi,
-    functionName: 'unlock',
-  })
-
-/**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link collateralTokenBridgeAbi}__ and `functionName` set to `"unpause"`
  */
 export const useWriteCollateralTokenBridgeUnpause =
@@ -1217,12 +1217,21 @@ export const useSimulateCollateralTokenBridgeAcceptOwnership =
   })
 
 /**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link collateralTokenBridgeAbi}__ and `functionName` set to `"lock"`
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link collateralTokenBridgeAbi}__ and `functionName` set to `"bridgeTx"`
  */
-export const useSimulateCollateralTokenBridgeLock =
+export const useSimulateCollateralTokenBridgeBridgeTx =
   /*#__PURE__*/ createUseSimulateContract({
     abi: collateralTokenBridgeAbi,
-    functionName: 'lock',
+    functionName: 'bridgeTx',
+  })
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link collateralTokenBridgeAbi}__ and `functionName` set to `"finalizeBridgeTx"`
+ */
+export const useSimulateCollateralTokenBridgeFinalizeBridgeTx =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: collateralTokenBridgeAbi,
+    functionName: 'finalizeBridgeTx',
   })
 
 /**
@@ -1262,15 +1271,6 @@ export const useSimulateCollateralTokenBridgeTransferOwnership =
   })
 
 /**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link collateralTokenBridgeAbi}__ and `functionName` set to `"unlock"`
- */
-export const useSimulateCollateralTokenBridgeUnlock =
-  /*#__PURE__*/ createUseSimulateContract({
-    abi: collateralTokenBridgeAbi,
-    functionName: 'unlock',
-  })
-
-/**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link collateralTokenBridgeAbi}__ and `functionName` set to `"unpause"`
  */
 export const useSimulateCollateralTokenBridgeUnpause =
@@ -1295,12 +1295,12 @@ export const useWatchCollateralTokenBridgeBridgeFinalizedEvent =
   })
 
 /**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link collateralTokenBridgeAbi}__ and `eventName` set to `"BridgeInitiated"`
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link collateralTokenBridgeAbi}__ and `eventName` set to `"BridgeTxInitiated"`
  */
-export const useWatchCollateralTokenBridgeBridgeInitiatedEvent =
+export const useWatchCollateralTokenBridgeBridgeTxInitiatedEvent =
   /*#__PURE__*/ createUseWatchContractEvent({
     abi: collateralTokenBridgeAbi,
-    eventName: 'BridgeInitiated',
+    eventName: 'BridgeTxInitiated',
   })
 
 /**
@@ -1571,21 +1571,21 @@ export const useWriteSyntheticTokenBridgeAcceptOwnership =
   })
 
 /**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link syntheticTokenBridgeAbi}__ and `functionName` set to `"burn"`
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link syntheticTokenBridgeAbi}__ and `functionName` set to `"bridgeTx"`
  */
-export const useWriteSyntheticTokenBridgeBurn =
+export const useWriteSyntheticTokenBridgeBridgeTx =
   /*#__PURE__*/ createUseWriteContract({
     abi: syntheticTokenBridgeAbi,
-    functionName: 'burn',
+    functionName: 'bridgeTx',
   })
 
 /**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link syntheticTokenBridgeAbi}__ and `functionName` set to `"mint"`
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link syntheticTokenBridgeAbi}__ and `functionName` set to `"finalizeBridgeTx"`
  */
-export const useWriteSyntheticTokenBridgeMint =
+export const useWriteSyntheticTokenBridgeFinalizeBridgeTx =
   /*#__PURE__*/ createUseWriteContract({
     abi: syntheticTokenBridgeAbi,
-    functionName: 'mint',
+    functionName: 'finalizeBridgeTx',
   })
 
 /**
@@ -1649,21 +1649,21 @@ export const useSimulateSyntheticTokenBridgeAcceptOwnership =
   })
 
 /**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link syntheticTokenBridgeAbi}__ and `functionName` set to `"burn"`
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link syntheticTokenBridgeAbi}__ and `functionName` set to `"bridgeTx"`
  */
-export const useSimulateSyntheticTokenBridgeBurn =
+export const useSimulateSyntheticTokenBridgeBridgeTx =
   /*#__PURE__*/ createUseSimulateContract({
     abi: syntheticTokenBridgeAbi,
-    functionName: 'burn',
+    functionName: 'bridgeTx',
   })
 
 /**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link syntheticTokenBridgeAbi}__ and `functionName` set to `"mint"`
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link syntheticTokenBridgeAbi}__ and `functionName` set to `"finalizeBridgeTx"`
  */
-export const useSimulateSyntheticTokenBridgeMint =
+export const useSimulateSyntheticTokenBridgeFinalizeBridgeTx =
   /*#__PURE__*/ createUseSimulateContract({
     abi: syntheticTokenBridgeAbi,
-    functionName: 'mint',
+    functionName: 'finalizeBridgeTx',
   })
 
 /**
@@ -1727,12 +1727,12 @@ export const useWatchSyntheticTokenBridgeBridgeFinalizedEvent =
   })
 
 /**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link syntheticTokenBridgeAbi}__ and `eventName` set to `"BridgeInitiated"`
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link syntheticTokenBridgeAbi}__ and `eventName` set to `"BridgeTxInitiated"`
  */
-export const useWatchSyntheticTokenBridgeBridgeInitiatedEvent =
+export const useWatchSyntheticTokenBridgeBridgeTxInitiatedEvent =
   /*#__PURE__*/ createUseWatchContractEvent({
     abi: syntheticTokenBridgeAbi,
-    eventName: 'BridgeInitiated',
+    eventName: 'BridgeTxInitiated',
   })
 
 /**

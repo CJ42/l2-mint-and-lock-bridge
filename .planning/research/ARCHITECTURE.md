@@ -13,7 +13,7 @@ This is a **brownfield, scoped research pass**. It does not re-derive the existi
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │  Chain state (Base Sepolia / Arbitrum Sepolia contracts)             │
-│  BridgeInitiated / BridgeFinalized events · custom error selectors   │
+│  BridgeTxInitiated / BridgeFinalized events · custom error selectors   │
 └───────────────────────────────┬───────────────────────────────────────┘
                                  │ fallback([webSocket, http]) per chain
                                  ▼

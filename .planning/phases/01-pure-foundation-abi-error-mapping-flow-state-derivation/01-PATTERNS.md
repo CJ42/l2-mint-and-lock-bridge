@@ -41,7 +41,7 @@ export function reconstructMessage({
   log,
   canonicalToken,
 }: {
-  log: BridgeInitiatedLog
+  log: BridgeTxInitiatedLog
   canonicalToken: Address
 }): { message: BridgeMessage; messageId: Hex } {
 ```
@@ -50,7 +50,7 @@ Apply the same shape to the decode function, e.g. `decodeBridgeError({ error }: 
 **Plain-sentence-plus-evidence error message pattern** (`relayer/src/message.ts` lines 65-67):
 ```typescript
 throw new Error(
-  `BridgeInitiated messageId mismatch: emitted ${args.messageId}, computed ${computedMessageId}`,
+  `BridgeTxInitiated messageId mismatch: emitted ${args.messageId}, computed ${computedMessageId}`,
 )
 ```
 This is the closest existing precedent in the codebase for "plain sentence + parenthetical/inline raw evidence" (D-06) — interpolate real decoded values directly into the string, don't abstract them behind generic placeholders.
@@ -162,7 +162,7 @@ import { canonicalUsdcAddress } from "../src/config"
 import {
   hashBridgeMessage,
   reconstructMessage,
-  type BridgeInitiatedLog,
+  type BridgeTxInitiatedLog,
   type BridgeMessage,
 } from "../src/message"
 
@@ -185,7 +185,7 @@ describe("bridge message integrity", () => {
 })
 
 function createMessage(): BridgeMessage { /* fixture builder, inline in test file */ }
-function createLog({ message, messageId }: { message: BridgeMessage; messageId: Hex }): BridgeInitiatedLog { /* fixture builder */ }
+function createLog({ message, messageId }: { message: BridgeMessage; messageId: Hex }): BridgeTxInitiatedLog { /* fixture builder */ }
 ```
 
 Apply directly: `describe`/`test`/`expect` from `bun:test`; fixture/builder functions (`createMessage()`-style) defined inline at the bottom of the test file, not in a shared test-utils file; `expect(fn).toThrow("substring")` for error-path assertions; explicit `Address`/`Hex` `type`-only imports from viem. Both `decode-bridge-error.test.ts` and `derive-flow-state.test.ts` should follow this exact structure — likely with builder functions like `createDecodedError()`/`createSimulateFailure()` and `createFlowStateInput()` respectively.
@@ -202,7 +202,7 @@ export function reconstructMessage({
   log,
   canonicalToken,
 }: {
-  log: BridgeInitiatedLog
+  log: BridgeTxInitiatedLog
   canonicalToken: Address
 }): { message: BridgeMessage; messageId: Hex } { ... }
 ```
