@@ -73,6 +73,43 @@ reverts (Phase 1) — it only consumes the event fragments Phase 1's generated A
   that is precisely the failure LIVE-02 exists to catch. Being re-runnable also matters because
   free-tier testnet endpoints rot.
 
+### Resolved during plan-phase (were `<deferred>` gray areas; answered by the user after research)
+
+- **D-05:** Transport wiring covers **both the hooks and `ui/src/wagmi.ts`**. `use-relay-status.ts`
+  is built on the **module-level `createPublicClient` pattern** already used by
+  `use-bridge-messages.ts` — this expresses LIVE-01's explicit-`chainId`, wallet-independent
+  requirement more naturally than a shared wagmi `Config`. Separately, `wagmi.ts`'s `transports`
+  map **also gains the same conditional `webSocket()` entry**, so `useWatchContractEvent` remains a
+  real option for any future component-local subscription instead of silently degrading to polling.
+  Resolves deferred item #1 (flagged there as the highest-consequence open decision in the phase).
+
+- **D-06:** Degrade & recovery policy — **slow reconciliation always, fast poll only on fallback**.
+  The WS subscription is the primary path. A **slow (~60s) `getLogs` reconciliation pass runs
+  permanently** as a safety net; it is cheap and safe-by-construction because state is merged by
+  `messageId` rather than appended, so dedupe absorbs any overlap. The **fast (old 6-second cadence)
+  poll is reserved exclusively for confirmed-unhealthy / fallback mode**. This is the synthesis of
+  STACK.md's "keep a reconciliation pass running regardless of subscription state" and PITFALLS.md's
+  warning against running the *fast* poll permanently in parallel with a healthy subscription —
+  the two documents were describing different cadences, not disagreeing. Staleness threshold uses
+  the `max(3 × blockTime, floor)` formula from RESEARCH.md; exact constants are Claude's discretion.
+  Resolves deferred item #2.
+
+- **D-07:** Transport health is **returned from both hooks but not rendered this phase**. Add a
+  `transportMode` field typed `'connected' | 'stale' | 'reconnecting' | 'polling-fallback'` to both
+  hooks' return objects, following the existing `UseBridgeMessagesResult { messages, isLoading,
+  error, refresh }` shape convention. This state must be tracked internally for the watchdog to
+  function at all, so returning it costs nothing; whether `bridge-card.tsx` renders it is Phase 3's
+  decision. Not returning it would force Phase 3 to reach back into Phase 2's internals.
+  Resolves deferred item #3.
+
+- **D-08:** Relay confirmation uses **first-sight + rollback-on-`removed`**, not confirmation-depth
+  tracking. A step/message is marked confirmed on first sight of the `BridgeFinalized` log and
+  rolled back when a `removed: true` log for the same `messageId` arrives. This satisfies LIVE-07 as
+  written ("does not leave a step or a message falsely marked confirmed"), and the rollback path is
+  required under either mechanism — a confirmation-depth design still has to handle a `removed: true`
+  arriving before the depth threshold. Confirmation-depth can be layered on later without changing
+  the dedupe/rollback foundation. The choice must be recorded explicitly in the plan, not left implicit.
+
 ### Claude's Discretion
 
 - Exact file location and CLI shape of the smoke-test script (`scripts/` at repo root vs
