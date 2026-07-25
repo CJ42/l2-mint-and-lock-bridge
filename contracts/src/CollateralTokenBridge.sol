@@ -1,29 +1,55 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+// SPDX-License-Identifier: Apache-2.0
+pragma solidity ^0.8.27;
 
+// globals
+import "./Errors.sol" as Errors;
+import "./Types.sol" as Types;
+import "./BridgeLib.sol" as BridgeLib;
+
+// interfaces
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+
+// modules
+import {BridgeBase} from "./BridgeBase.sol";
+import {ReentrancyGuardTransient} from "openzeppelin-contracts/contracts/utils/ReentrancyGuardTransient.sol";
+
+// libraries
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import {BridgeBase} from "./BridgeBase.sol";
+using {BridgeLib.computeBridgeMessageId} for Types.BridgeMessage;
 
-contract CollateralTokenBridge is BridgeBase {
+//             ..                                       ..
+//             []                                       []
+//           .:[]:_                                   ,:[]:.
+//         .: :[]: :-.                             ,-: :[]: :.
+//       .: : :[]: : :`._                       ,.': : :[]: : :.
+//     .: : : :[]: : : : :-._               _,-: : : : :[]: : : :.
+// _..: : : : :[]: : : : : : :-._________.-: : : : : : :[]: : : : :-._
+// _:_:_:_:_:_:[]:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:[]:_:_:_:_:_:_
+// !!!!!!!!!!!![]!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!![]!!!!!!!!!!!!!
+// ^^^^^^^^^^^^[]^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[]^^^^^^^^^^^^^
+//             []    ==============================     []
+//             []    | L2 Collateral Token Bridge |     []
+//             []    ==============================     []
+//
+contract CollateralTokenBridge is BridgeBase, ReentrancyGuardTransient {
     using SafeERC20 for IERC20;
 
     IERC20 public immutable TOKEN;
     uint256 public immutable DESTINATION_CHAIN_ID;
 
     constructor(address owner_, IERC20 token_, uint256 destinationChainId_) BridgeBase(owner_) {
-        if (address(token_) == address(0)) revert InvalidToken();
+        require(address(token_) != address(0), Errors.TokenCannotBeZeroAddress());
         TOKEN = token_;
         DESTINATION_CHAIN_ID = destinationChainId_;
     }
 
     /// @notice Locks canonical TOKEN and emits a Base-to-Arbitrum bridge message.
-    function lock(address recipient, uint256 amount) external whenNotPaused {
-        _validateInitiation(recipient, amount);
+    function lock(address recipient, uint256 amount) external whenNotPaused nonReentrant {
+        _validateInputs(recipient, amount);
 
         uint256 nonce = nonces[msg.sender]++;
-        BridgeMessage memory message = BridgeMessage({
+        Types.BridgeMessage memory message = Types.BridgeMessage({
             originChainId: block.chainid,
             destinationChainId: DESTINATION_CHAIN_ID,
             token: address(TOKEN),
@@ -32,17 +58,20 @@ contract CollateralTokenBridge is BridgeBase {
             amount: amount,
             nonce: nonce
         });
-        bytes32 id = messageId(message);
+        bytes32 messageId = message.computeBridgeMessageId();
+
+        // events are a kind of state changing operations (not on the smart contract but on the chain as they write a log)
+        // emit before external calls to respect strictly CEI
+        emit BridgeInitiated(messageId, msg.sender, recipient, amount, nonce, block.chainid, DESTINATION_CHAIN_ID);
 
         TOKEN.safeTransferFrom(msg.sender, address(this), amount);
-        emit BridgeInitiated(id, msg.sender, recipient, amount, nonce, block.chainid, DESTINATION_CHAIN_ID);
     }
 
     /// @notice Unlocks canonical TOKEN after a destination-chain burn.
-    function unlock(BridgeMessage calldata message) external onlyRelayer whenNotPaused {
-        bytes32 id = _consumeMessage(message);
+    function unlock(Types.BridgeMessage calldata message) external onlyRelayer whenNotPaused nonReentrant {
+        bytes32 messageId = _consumeMessage(message);
 
+        emit BridgeFinalized(messageId, message.recipient, message.amount);
         TOKEN.safeTransfer(message.recipient, message.amount);
-        emit BridgeFinalized(id, message.recipient, message.amount);
     }
 }

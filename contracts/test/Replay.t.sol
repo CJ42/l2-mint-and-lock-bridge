@@ -1,32 +1,40 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.24;
 
-import {BridgeBase} from "../src/BridgeBase.sol";
+// globals
+import "../src/Errors.sol" as Errors;
+import "../src/Types.sol" as Types;
+import "../src/BridgeLib.sol" as BridgeLib;
+
 import {TestSetup} from "./TestSetup.sol";
+
+using {BridgeLib.computeBridgeMessageId} for Types.BridgeMessage;
 
 contract ReplayTest is TestSetup {
     function testMintRejectsReplay() public {
         vm.chainId(ARBITRUM_CHAIN_ID);
-        BridgeBase.BridgeMessage memory message = baseToArbitrumMessage(0);
-        bytes32 id = syntheticBridge.messageId(message);
+        Types.BridgeMessage memory message = baseToArbitrumMessage(0);
+        bytes32 id = message.computeBridgeMessageId();
 
         vm.prank(relayer);
         syntheticBridge.mint(message);
 
         assertTrue(syntheticBridge.processed(id));
-        vm.expectRevert(BridgeBase.MessageAlreadyProcessed.selector);
+        vm.expectRevert(abi.encodeWithSelector(Errors.BridgeMessageAlreadyProcessed.selector, id));
         vm.prank(relayer);
         syntheticBridge.mint(message);
     }
 
     function testUnlockRejectsReplay() public {
         vm.chainId(BASE_CHAIN_ID);
-        BridgeBase.BridgeMessage memory message = arbitrumToBaseMessage(0);
+        Types.BridgeMessage memory message = arbitrumToBaseMessage(0);
 
         vm.prank(relayer);
         collateralBridge.unlock(message);
 
-        vm.expectRevert(BridgeBase.MessageAlreadyProcessed.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.BridgeMessageAlreadyProcessed.selector, message.computeBridgeMessageId())
+        );
         vm.prank(relayer);
         collateralBridge.unlock(message);
     }
@@ -34,7 +42,9 @@ contract ReplayTest is TestSetup {
     function testMintRejectsWrongDestination() public {
         vm.chainId(BASE_CHAIN_ID);
 
-        vm.expectRevert(BridgeBase.InvalidDestinationChain.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.InvalidDestinationChainId.selector, BASE_CHAIN_ID, ARBITRUM_CHAIN_ID)
+        );
         vm.prank(relayer);
         syntheticBridge.mint(baseToArbitrumMessage(0));
     }
@@ -42,7 +52,9 @@ contract ReplayTest is TestSetup {
     function testUnlockRejectsWrongDestination() public {
         vm.chainId(ARBITRUM_CHAIN_ID);
 
-        vm.expectRevert(BridgeBase.InvalidDestinationChain.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.InvalidDestinationChainId.selector, ARBITRUM_CHAIN_ID, BASE_CHAIN_ID)
+        );
         vm.prank(relayer);
         collateralBridge.unlock(arbitrumToBaseMessage(0));
     }

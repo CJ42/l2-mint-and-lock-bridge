@@ -2,6 +2,23 @@
 
 A bidirectional bridge for Circle testnet USDC between Base Sepolia and Arbitrum Sepolia. Base USDC is locked as collateral and an equivalent 6-decimal `wUSDC` is minted on Arbitrum; returning burns `wUSDC` before releasing the original USDC.
 
+```
+                                         
+            ..                                       ..
+            []                                       []
+          .:[]:_                                   ,:[]:.
+        .: :[]: :-.                             ,-: :[]: :.
+      .: : :[]: : :`._                       ,.': : :[]: : :.
+    .: : : :[]: : : : :-._               _,-: : : : :[]: : : :.
+_..: : : : :[]: : : : : : :-._________.-: : : : : : :[]: : : : :-._
+_:_:_:_:_:_:[]:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:[]:_:_:_:_:_:_
+!!!!!!!!!!!![]!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!![]!!!!!!!!!!!!!
+^^^^^^^^^^^^[]^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[]^^^^^^^^^^^^^
+            []       =========================       []
+            []       | L2 ERC20 Token Bridge |       []
+            []       =========================       []
+```
+
 ```text
 Base Sepolia                                      Arbitrum Sepolia
 user → CollateralTokenBridge → BridgeInitiated

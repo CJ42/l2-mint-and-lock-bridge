@@ -1,10 +1,34 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+// SPDX-License-Identifier: Apache-2.0
+pragma solidity ^0.8.27;
 
+// globals
+import "./Errors.sol" as Errors;
+import "./Types.sol" as Types;
+import "./BridgeLib.sol" as BridgeLib;
+
+// modules
 import {BridgeBase} from "./BridgeBase.sol";
 import {WrappedToken} from "./WrappedToken.sol";
+import {ReentrancyGuardTransient} from "openzeppelin-contracts/contracts/utils/ReentrancyGuardTransient.sol";
 
-contract SyntheticTokenBridge is BridgeBase {
+// libraries
+using {BridgeLib.computeBridgeMessageId} for Types.BridgeMessage;
+
+//             ..                                       ..
+//             []                                       []
+//           .:[]:_                                   ,:[]:.
+//         .: :[]: :-.                             ,-: :[]: :.
+//       .: : :[]: : :`._                       ,.': : :[]: : :.
+//     .: : : :[]: : : : :-._               _,-: : : : :[]: : : :.
+// _..: : : : :[]: : : : : : :-._________.-: : : : : : :[]: : : : :-._
+// _:_:_:_:_:_:[]:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:[]:_:_:_:_:_:_
+// !!!!!!!!!!!![]!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!![]!!!!!!!!!!!!!
+// ^^^^^^^^^^^^[]^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[]^^^^^^^^^^^^^
+//             []     =============================     []
+//             []     | L2 Synthetic Token Bridge |     []
+//             []     =============================     []
+//
+contract SyntheticTokenBridge is BridgeBase, ReentrancyGuardTransient {
     WrappedToken public immutable wrappedToken;
     address public immutable CANONICAL_TOKEN;
     uint256 public immutable DESTINATION_CHAIN_ID;
@@ -12,14 +36,16 @@ contract SyntheticTokenBridge is BridgeBase {
     constructor(address owner_, WrappedToken wrappedToken_, address canonicalToken_, uint256 destinationChainId_)
         BridgeBase(owner_)
     {
-        if (address(wrappedToken_) == address(0) || canonicalToken_ == address(0)) revert InvalidToken();
+        require(
+            address(wrappedToken_) != address(0) && canonicalToken_ != address(0), Errors.TokenCannotBeZeroAddress()
+        );
         wrappedToken = wrappedToken_;
         CANONICAL_TOKEN = canonicalToken_;
         DESTINATION_CHAIN_ID = destinationChainId_;
     }
 
     /// @notice Mints wrapped USDC after a canonical USDC lock.
-    function mint(BridgeMessage calldata message) external onlyRelayer whenNotPaused {
+    function mint(Types.BridgeMessage calldata message) external onlyRelayer whenNotPaused nonReentrant {
         bytes32 id = _consumeMessage(message);
 
         wrappedToken.mint(message.recipient, message.amount);
@@ -27,11 +53,11 @@ contract SyntheticTokenBridge is BridgeBase {
     }
 
     /// @notice Burns approved wrapped USDC and emits an Arbitrum-to-Base bridge message.
-    function burn(address recipient, uint256 amount) external whenNotPaused {
-        _validateInitiation(recipient, amount);
+    function burn(address recipient, uint256 amount) external whenNotPaused nonReentrant {
+        _validateInputs(recipient, amount);
 
         uint256 nonce = nonces[msg.sender]++;
-        BridgeMessage memory message = BridgeMessage({
+        Types.BridgeMessage memory message = Types.BridgeMessage({
             originChainId: block.chainid,
             destinationChainId: DESTINATION_CHAIN_ID,
             token: CANONICAL_TOKEN,
@@ -40,9 +66,10 @@ contract SyntheticTokenBridge is BridgeBase {
             amount: amount,
             nonce: nonce
         });
-        bytes32 id = messageId(message);
+        bytes32 messageId = message.computeBridgeMessageId();
+
+        emit BridgeInitiated(messageId, msg.sender, recipient, amount, nonce, block.chainid, DESTINATION_CHAIN_ID);
 
         wrappedToken.burnFrom(msg.sender, amount);
-        emit BridgeInitiated(id, msg.sender, recipient, amount, nonce, block.chainid, DESTINATION_CHAIN_ID);
     }
 }
