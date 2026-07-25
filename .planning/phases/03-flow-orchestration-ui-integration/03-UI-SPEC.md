@@ -1,7 +1,7 @@
 ---
 phase: 3
 slug: flow-orchestration-ui-integration
-status: draft
+status: approved
 shadcn_initialized: false
 preset: none
 created: 2026-07-25
@@ -102,6 +102,16 @@ rings, the pending-step spinner and its circle border. **green** — step-confir
 and the completed-state button only. **orange** — unchanged pre-existing usage (title dot,
 undeployed notice, explorer live dot), not touched or extended by this phase. **danger-red** —
 error banner and field validation only, never the button.
+
+**60/30/10 confirmation for this phase's new elements** (added per the checker's Dimension 3
+recommendation — the split was previously stated as inherited but not re-declared for the surfaces
+this phase introduces): across the stepper, action button, error banner, spinner and transport
+pill, `--white` remains the dominant 60% (step circle fills in `upcoming` and `pending`, banner
+background, button label text on blue); `--surface`/`--border` hold the secondary 30% (upcoming
+circle borders, inactive connector lines, the polling-fallback pill background); and blue + green +
+danger + orange **combined** stay within the 10% accent budget — enforced structurally by the
+reserved-for lists above, since at most one accent is ever active per surface at a time (a step
+circle is blue *or* green, never both; the button is blue *or* green, never danger).
 
 ---
 
@@ -240,17 +250,76 @@ degraded, and only where it is load-bearing**:
 
 ## UI Considerations
 
-Applicable state considerations resolved: 6 covered, 1 backstop, 0 unresolved
+Produced by the post-verification UI-consideration probe (`ui-consideration-probe.cjs`) over five
+described surfaces. **27 applicable considerations raised: 21 covered, 6 dismissed with reason,
+0 unresolved**, plus 1 carried-forward backstop outside the raised set (recorded below rather than
+dropped).
 
-| Category | Element(s) | Status | Resolution / Reason |
-|----------|------------|--------|---------------------|
-| loading / pending | Stepper (steps 1–3), ActionButton | ✅ covered | Blue `<Spinner>` in the 24px circle / replacing the button icon for the full pending+processing window; disabled throughout (BTN-02) |
-| error | Error banner, ActionButton `failed` state | ✅ covered | One banner (headline in `--danger` + decoded body), button becomes `Try again` in the unchanged primary/blue variant — no danger-colored chrome outside the banner |
-| populated / success | Stepper (all-confirmed), ActionButton `done` state | ✅ covered | Three green-filled checkmark circles + `success`-variant button anchor (`Done ✓ — view on explorer`) — the documented "demo payoff" screenshot |
-| empty / not-yet-started | Stepper (`upcoming`) | ✅ covered | Neutral outlined circle with step digit, no caption — an honest "nothing has happened yet" state, not a faked one |
-| loading (initial mount / rehydration) | Stepper on page load / refresh | ✅ covered | `upcoming` doubles as the pre-hydration placeholder (see Refresh-recovery rendering above) — no separate skeleton state invented |
-| long-text | Error banner body | ✅ covered | Decoded revert reasons and hex evidence (`messageId`, calldata) use `overflow-wrap: anywhere` (existing `.chainBalance` precedent), banner width matches the card, no truncation |
-| partial / indeterminate | Transport-health pill on first mount | 🧪 backstop | Treat an unresolved `transportMode` identically to `'connected'` (render nothing) until the watchdog classifies it — held out as a visual-state test since it depends on Phase 2's hook timing, not purely this phase's markup |
+Detected element kinds (classifier output, confirmed — no kind was added): E1 Stepper
+`list-collection` + `static-content`; E2 ActionButton `form` + `media` + `interactive-control` +
+`static-content`; E3 Error banner `list-collection` + `static-content`; E4 Spinner
+`interactive-control` + `static-content`; E5 Transport pill `static-content`.
+
+### E1 — Stepper (`stepper.tsx`)
+
+| Category | Status | Statement / Reason |
+|----------|--------|--------------------|
+| empty | covered | Before any flow starts, all three steps render in the `upcoming` state: a 24px circle with `1.5px solid var(--border)`, the step index digit in `var(--muted)`, and no caption |
+| loading | covered | A pending step renders the blue `<Spinner>` inside its 24px circle with its caption shown; on initial mount before rehydration resolves, all three steps render as `upcoming` rather than a separate skeleton |
+| error | covered | On `failed`, every step whose per-step status is not literally `confirmed` reverts to the `upcoming` circle; steps already `confirmed` keep their green checkmark; no step renders red or gains a failed glyph |
+| populated | covered | The all-confirmed state renders three green-filled circles with white checkmarks and green connector lines, alongside the `success`-variant `Done ✓ — view on explorer` button |
+| partial | covered | A mixed stepper is first-class, not an edge case: step 1 `confirmed` green while steps 2 and 3 are `upcoming` is the exact rendering required after a bridge write reverts post-approval |
+| overflow | covered | Step captions wrap freely to as many lines as needed with no truncation and no ellipsis; the step row grows vertically and the 2px connector line stretches to match |
+| zero-one-many | dismissed | **Reason:** the stepper has fixed arity — always exactly three steps, never zero and never variable. No singular/plural copy or count-dependent spacing exists to resolve |
+| long-text | covered | Captions are three fixed strings from `TX_FLOW.md`; the longest (*"Your transaction has been picked up and is being processed…"*) wraps under the overflow rule above and is never clipped |
+
+### E2 — ActionButton (`action-button.tsx`)
+
+| Category | Status | Statement / Reason |
+|----------|--------|--------------------|
+| empty | dismissed | **Reason:** all fourteen rows of the flow-state → copy table declare a non-empty label. There is no state in which the button renders without text, so an empty rendering cannot occur |
+| loading | covered | For every state where the copy table marks Spinner = yes, the `<Spinner>` (white-on-blue) fully replaces the icon slot — never rendered alongside an icon — and `disabled` stays `true` for the entire pending/processing window |
+| error | covered | The `failed` state renders `Try again` with a retry glyph in the unchanged primary/blue variant; danger colour never reaches the button, the banner alone carries the failure signal |
+| populated | covered | `idle` renders `Bridge` with the arrow/transfer glyph; `done` renders as a `success`-variant anchor reading `Done ✓ — view on explorer` |
+| partial | covered | The `incomplete-input` states are the partial-input rendering: `Enter an amount` and `Enter a recipient`, both disabled with no icon |
+| overflow | covered | The button stays single-line at 48px min-height in every state; the existing `0.06em` letter-spacing tightens on the longest labels so they fit the card width. No wrapping, no ellipsis, no height change between states |
+| long-text | covered | `Confirm approval in wallet` (26 characters) is the longest declared label and sets the letter-spacing tightening bound; all other labels render at the untightened default |
+
+### E3 — Error banner (in `bridge-card.tsx`)
+
+| Category | Status | Statement / Reason |
+|----------|--------|--------------------|
+| empty | covered | The banner does not render at all when there is no error — absence is the no-error state, and no empty-banner shell is ever painted |
+| loading | dismissed | **Reason:** the banner renders only on a terminal failure. It has no in-flight state of its own — the flow's loading states belong to the stepper and the button |
+| error | covered | Two-part: a bold `--danger` headline naming the failed stage (`Approval failed`, `Simulation failed`, `Bridge transaction failed`, `Transaction rejected`) followed by the decoded reason in `--ink` from Phase 1's decode chain |
+| populated | covered | Headline plus decoded sentence carrying real evidence values, with any faucet or explorer link rendered inline as an underlined `--blue` link inside the body sentence rather than as a separate CTA |
+| partial | covered | When the decode chain yields no usable reason — ERR-06 (out-of-gas, empty revert data) or ERR-08 (unrecognised revert) — the body falls back to the raw hex revert data as selectable monospace, or `no revert data returned` for the out-of-gas case, plus the explorer link. The banner is never content-free |
+| overflow | covered | Banner width matches the card; body text uses `overflow-wrap: anywhere` (existing `.chainBalance` precedent) so nothing is clipped or truncated |
+| zero-one-many | dismissed | **Reason:** exactly one banner is ever shown. A new failure replaces the previous banner rather than stacking, so there is no multi-item layout to resolve |
+| long-text | covered | Hex evidence — a 66-character `messageId`, raw calldata — wraps mid-token via `overflow-wrap: anywhere` and remains fully selectable for copying |
+
+### E4 — Spinner (`spinner.tsx`)
+
+| Category | Status | Statement / Reason |
+|----------|--------|--------------------|
+| overflow | dismissed | **Reason:** a fixed 16px glyph with no container-relative content. It cannot exceed its bounds because its size is a constant, not a function of content |
+| long-text | dismissed | **Reason:** the spinner carries no text at all — it is a pure CSS-keyframe ring with `aria-hidden="true"` |
+
+### E5 — Transport-health pill
+
+| Category | Status | Statement / Reason |
+|----------|--------|--------------------|
+| overflow | covered | Two fixed strings on a single line at `4px 8px` padding, sitting under step 3's caption inside the hero column width — neither string approaches the available width |
+| long-text | covered | `Live updates via polling` (24 characters at 10px/600) is the longest string; bounded by construction, so no wrapping or truncation rule is needed |
+
+### Backstop (carried forward from the pre-probe draft — not raised by the probe, recorded rather than dropped)
+
+- `{ statement: "An unresolved transportMode on first mount renders identically to 'connected' — that is, renders nothing — until the staleness watchdog classifies it, so no false 'Reconnecting…' pill flashes on first paint", verification: backstop }`
+
+  Held out as a visual-state test rather than marked covered because it depends on Phase 2's hook
+  timing (`use-relay-status.ts`'s watchdog classification latency), not purely on this phase's
+  markup. At verify time this routes to `insufficient_spec → human_needed` unless a wired test
+  provides explicit evidence.
 
 ---
 
@@ -265,11 +334,14 @@ Applicable state considerations resolved: 6 covered, 1 backstop, 0 unresolved
 
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PASS
-- [ ] Dimension 2 Visuals: PASS
-- [ ] Dimension 3 Color: PASS
-- [ ] Dimension 4 Typography: PASS
-- [ ] Dimension 5 Spacing: PASS
-- [ ] Dimension 6 Registry Safety: PASS
+Verified by `gsd-ui-checker` on 2026-07-25.
 
-**Approval:** pending
+- [x] Dimension 1 Copywriting: **PASS** — all CTAs specific and actionable; error copy carries a solution path; no generic placeholder labels
+- [x] Dimension 2 Visuals: **PASS** — focal point (hero column) and hierarchy declared; icons specified with `aria-hidden` and stroke conventions
+- [x] Dimension 3 Color: **PASS** *(was FLAG — resolved)* — accent reserved-for lists prevent overuse; the 60/30/10 split has since been explicitly re-declared for this phase's new elements (see Color section)
+- [x] Dimension 4 Typography: **PASS** — 3 sizes (10/11/13px), 2 weights (400/600), all line heights declared
+- [x] Dimension 5 Spacing: **PASS** — all values multiples of 4 and within the standard set; the 2px connector and 24px circle justified as decorative constants
+- [x] Dimension 6 Registry Safety: **PASS** — no third-party registries; shadcn confirmed absent (`components.json` not present)
+
+**Approval:** approved — 6/6 dimensions pass, 0 blocking issues. The single non-blocking Dimension 3
+recommendation was applied rather than accepted as a standing FLAG.
