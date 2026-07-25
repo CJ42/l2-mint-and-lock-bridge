@@ -49,7 +49,6 @@ export function BridgeCard({ flow }: BridgeCardProps) {
   return (
     <section className={styles.card} aria-labelledby="bridge-heading">
       <div className={styles.cardHeading}>
-        <h2 id="bridge-heading">Transfer</h2>
         <span className={styles.tag}>Testnet</span>
       </div>
 
@@ -100,7 +99,7 @@ export function BridgeCard({ flow }: BridgeCardProps) {
             onChange={(event) => setAmountInput(event.target.value)}
           />
           <span className={styles.token}>
-            <Image src={originChain.logo} alt="" width={16} height={16} />
+            <Image src="/usdc-logo.png" alt="" width={16} height={16} />
             {direction.tokenSymbol}
           </span>
         </div>
@@ -219,10 +218,12 @@ function ChainPanel({
       </div>
       {isConnected && (
         <span className={styles.chainBalance}>
-          Balance on {chain.name} ={' '}
+          Balance on {chain.name} 
+          <p> = {' '}
           {balance === undefined
             ? '…'
             : `${formatTokenAmount(balance)} ${chain.tokenSymbol}`}
+            </p>
         </span>
       )}
     </div>

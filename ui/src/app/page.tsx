@@ -35,11 +35,6 @@ export default function HomePage() {
           <p className={styles.subtitle}>
             Move tokens between Arbitrum and Base Sepolia
           </p>
-          <ul className={styles.facts}>
-            {heroFacts.map((fact) => (
-              <li key={fact}>{fact}</li>
-            ))}
-          </ul>
           <BridgeStepper flowState={flow.flowState} />
         </div>
         <BridgeCard flow={flow} />
@@ -53,9 +48,3 @@ export default function HomePage() {
     </main>
   )
 }
-
-const heroFacts = [
-  'Lock USDC on Base Sepolia to mint wUSDC on Arbitrum Sepolia',
-  'Burn wUSDC on Arbitrum Sepolia to unlock the original collateral',
-  '6-decimal amounts · 5 confirmation relay target · testnets only',
-]
