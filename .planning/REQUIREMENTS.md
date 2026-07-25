@@ -9,13 +9,13 @@ Requirements for this milestone. Each maps to exactly one roadmap phase.
 
 ### ABI Foundation
 
-- [ ] **ABI-01**: Bridge ABIs are generated from Foundry build output via `@wagmi/cli`'s foundry plugin, run through a Bun script
-- [ ] **ABI-02**: The generated ABI includes every custom error fragment from `Errors.sol`, plus the ERC20/OpenZeppelin error fragments needed to decode token-originated reverts
-- [ ] **ABI-03**: The hand-written `parseAbi` subset in `ui/src/lib/abis.ts` and the untracked root ABI JSON dumps are removed, with all ABI imports pointing at the generated file
+- [x] **ABI-01**: Bridge ABIs are generated from Foundry build output via `@wagmi/cli`'s foundry plugin, run through a Bun script
+- [x] **ABI-02**: The generated ABI includes every custom error fragment from `Errors.sol`, plus the ERC20/OpenZeppelin error fragments needed to decode token-originated reverts
+- [x] **ABI-03**: The hand-written `parseAbi` subset in `ui/src/lib/abis.ts` and the untracked root ABI JSON dumps are removed, with all ABI imports pointing at the generated file
 
 ### Error Decoding
 
-- [ ] **ERR-01**: A revert carrying a known bridge custom error is shown as a readable sentence that includes the error's evidence values (e.g. the `messageId` for `BridgeMessageAlreadyProcessed`)
+- [x] **ERR-01**: A revert carrying a known bridge custom error is shown as a readable sentence that includes the error's evidence values (e.g. the `messageId` for `BridgeMessageAlreadyProcessed`)
 - [ ] **ERR-02**: Insufficient native gas is shown as an actionable message naming the chain, the approximate amount needed, and a faucet link
 - [ ] **ERR-03**: Insufficient allowance is shown as a message directing the user to re-run approve
 - [ ] **ERR-04**: An ERC20-originated revert (e.g. `SafeERC20FailedOperation`) decodes correctly rather than falling through as unknown
@@ -23,7 +23,7 @@ Requirements for this milestone. Each maps to exactly one roadmap phase.
 - [ ] **ERR-06**: An out-of-gas failure, which carries empty revert data and cannot be decoded, produces a specific message rather than a generic one
 - [ ] **ERR-07**: A Solidity `Panic(uint256)` revert is decoded to its documented meaning
 - [ ] **ERR-08**: An unrecognised revert falls through to a generic message that still exposes the raw revert data for debugging
-- [ ] **ERR-09**: The error-mapping layer is a single module documented in-code as intentionally narrow and extensible
+- [x] **ERR-09**: The error-mapping layer is a single module documented in-code as intentionally narrow and extensible
 
 ### Pre-flight Simulation
 
@@ -100,10 +100,10 @@ Which phases cover which requirements. Populated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ABI-01 | Phase 1 | Pending |
-| ABI-02 | Phase 1 | Pending |
-| ABI-03 | Phase 1 | Pending |
-| ERR-01 | Phase 1 | Pending |
+| ABI-01 | Phase 1 | Complete |
+| ABI-02 | Phase 1 | Complete |
+| ABI-03 | Phase 1 | Complete |
+| ERR-01 | Phase 1 | Complete |
 | ERR-02 | Phase 1 | Pending |
 | ERR-03 | Phase 1 | Pending |
 | ERR-04 | Phase 1 | Pending |
@@ -111,7 +111,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | ERR-06 | Phase 1 | Pending |
 | ERR-07 | Phase 1 | Pending |
 | ERR-08 | Phase 1 | Pending |
-| ERR-09 | Phase 1 | Pending |
+| ERR-09 | Phase 1 | Complete |
 | FLOW-01 | Phase 1 | Pending |
 | FLOW-05 | Phase 1 | Pending |
 | LIVE-01 | Phase 2 | Pending |
@@ -137,6 +137,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | BTN-02 | Phase 3 | Pending |
 
 **Coverage:**
+
 - v1 requirements: 35 total <!-- corrected during roadmap creation: the "## v1 Requirements" section lists 35 requirement IDs (ABI:3, ERR:9, SIM:3, FLOW:5, STEP:4, BTN:2, LIVE:9); the previous "31 total" placeholder predated this count and was stale -->
 - Mapped to phases: 35
 - Unmapped: 0 ✓

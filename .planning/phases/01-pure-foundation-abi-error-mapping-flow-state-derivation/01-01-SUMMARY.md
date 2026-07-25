@@ -192,3 +192,10 @@ None - no external service configuration required.
 ---
 *Phase: 01-pure-foundation-abi-error-mapping-flow-state-derivation*
 *Completed: 2026-07-25*
+
+## Self-Check: PASSED
+
+All created files verified present on disk (`ui/wagmi.config.ts`, `ui/src/lib/generated.ts`,
+`ui/src/lib/decode-bridge-error.ts`, `ui/src/lib/decode-bridge-error.test.ts`, this SUMMARY.md);
+`ui/src/lib/abis.ts`, `collateral-abi.json`, `synthetic-abi.json` confirmed deleted; all three
+commits (`047b244`, `197cac6`, `911956d`) confirmed present in `git log --oneline --all`.
