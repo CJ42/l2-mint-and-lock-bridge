@@ -4,10 +4,22 @@
  * Every bridge revert — from a pre-flight `useSimulateContract` dry run or a submitted
  * `useWriteContract` call — flows through `decodeBridgeError` and comes back as one of the ten
  * `DecodedBridgeErrorKind` branches below, each carrying a plain-language sentence with the real
- * decoded evidence value baked in. Extending this module means appending one more decoder to the
- * ordered chain in `decoders`, never inventing a second, parallel decode path. The gas-shortfall
- * helper lives in this file on purpose (ERR-09, D-09) rather than in its own module — the whole
- * decode chain is meant to stay legible as a single file.
+ * decoded evidence value baked in. `kind` is the primary, load-bearing field — `message` is a
+ * rendering of it, not the other way around (see 01-01-PLAN.md's `<assumption_delta_decision>`).
+ *
+ * Extending this module means appending one more decoder function to the ordered `decoders` array
+ * below and adding its `kind` to `DecodedBridgeErrorKind`, never inventing a second, parallel
+ * decode path — the exhaustiveness invariant test in `decode-bridge-error.test.ts` is the guard
+ * that keeps every declared kind reachable and collision-free. The gas-shortfall helper
+ * (`computeGasShortfall` and its dependencies) lives in this file on purpose (ERR-09, D-09)
+ * rather than in its own module — the whole decode chain is meant to stay legible as a single file.
+ *
+ * The decode chain's ORDER is load-bearing, not incidental. Two constraints are not obvious from
+ * reading a single decoder in isolation, so they're stated here once:
+ * - `decodeWalletRejection` must run FIRST, because a wallet rejection is not an on-chain failure
+ *   and must never be misclassified as one.
+ * - `decodeEmptyRevertData` must run before every branch that reads decoded revert data, because
+ *   zero-length revert data cannot be decoded at all — viem's `decodeErrorResult` throws on it.
  */
 
 import {

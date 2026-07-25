@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import {
+  BaseError,
   ContractFunctionRevertedError,
   EstimateGasExecutionError,
   InsufficientFundsError,
@@ -9,7 +10,12 @@ import {
   type Hex,
 } from 'viem'
 
-import { bridgeErrorAbi, decodeBridgeError } from './decode-bridge-error'
+import {
+  bridgeErrorAbi,
+  decodeBridgeError,
+  type DecodeBridgeErrorInput,
+  type DecodedBridgeErrorKind,
+} from './decode-bridge-error'
 
 // viem's built-in `Error(string)`/`Panic(uint256)` fragments (`solidityError`/`solidityPanic`)
 // are not part of viem's public package export surface, so we mirror their well-known shape
@@ -467,6 +473,119 @@ describe('decodeBridgeError — insufficient native gas', () => {
     expect(result.kind).toBe('insufficient-gas')
     expect(result.message).not.toContain('alchemy.com/faucets/base-sepolia')
     expect(result.message).not.toContain('alchemy.com/faucets/arbitrum-sepolia')
+  })
+})
+
+// The full declared union, spelled out here so this file fails to typecheck (missing property on
+// KIND_FIXTURES below) the moment a kind is added to DecodedBridgeErrorKind without a
+// corresponding fixture — the companion invariant test accepted in 01-01-PLAN.md's
+// `<assumption_delta_decision>`.
+const ALL_KINDS: DecodedBridgeErrorKind[] = [
+  'bridge-custom-error',
+  'unmapped-custom-error',
+  'token-operation-failed',
+  'insufficient-allowance',
+  'insufficient-gas',
+  'wallet-rejected',
+  'out-of-gas',
+  'panic',
+  'revert-string',
+  'unknown',
+]
+
+const KIND_FIXTURES: Record<DecodedBridgeErrorKind, DecodeBridgeErrorInput> = {
+  'bridge-custom-error': {
+    error: createRevertedError({
+      errorName: 'BridgeMessageAlreadyProcessed',
+      args: [`0x${'ab'.repeat(32)}` as Hex],
+    }),
+  },
+  'unmapped-custom-error': {
+    error: createRevertedError({
+      errorName: 'NotRelayer',
+      args: ['0x4444444444444444444444444444444444444444'],
+    }),
+  },
+  'token-operation-failed': {
+    error: createRevertedError({
+      errorName: 'SafeERC20FailedOperation',
+      args: ['0x1111111111111111111111111111111111111111'],
+    }),
+  },
+  'insufficient-allowance': {
+    error: createRevertedError({
+      errorName: 'ERC20InsufficientAllowance',
+      args: ['0x2222222222222222222222222222222222222222', 1_000_000n, 5_000_000n],
+    }),
+  },
+  'insufficient-gas': {
+    error: new InsufficientFundsError(),
+    chainId: 84532,
+    gasEstimate: { gas: 200_000n, feePerGas: 1_500_000_000n },
+  },
+  'wallet-rejected': {
+    error: new UserRejectedRequestError(new Error('user rejected')),
+  },
+  'out-of-gas': {
+    error: new ContractFunctionRevertedError({
+      abi: bridgeErrorAbi,
+      data: '0x',
+      functionName: 'lock',
+    }),
+  },
+  panic: { error: createPanicRevert(17n) },
+  'revert-string': { error: createErrorStringRevert('boom') },
+  unknown: {
+    error: new ContractFunctionRevertedError({
+      abi: bridgeErrorAbi,
+      data: '0xdeadbeef' as Hex,
+      functionName: 'lock',
+    }),
+  },
+}
+
+describe('decodeBridgeError — exhaustiveness invariant (ERR-09 / assumption-delta companion test)', () => {
+  test('every declared kind is reachable from at least one fixture', () => {
+    for (const kind of ALL_KINDS) {
+      const result = decodeBridgeError(KIND_FIXTURES[kind])
+      expect(result.kind).toBe(kind)
+    }
+  })
+
+  test('the set of observed kinds across the whole table equals the full declared union', () => {
+    const observed = new Set(ALL_KINDS.map((kind) => decodeBridgeError(KIND_FIXTURES[kind]).kind))
+
+    expect(observed.size).toBe(ALL_KINDS.length)
+    expect([...observed].sort()).toEqual([...ALL_KINDS].sort())
+  })
+
+  test('decodeBridgeError is total: it never throws and always returns a non-empty DecodedBridgeError', () => {
+    const nonErrorInputs: unknown[] = [
+      undefined,
+      null,
+      new Error('a plain error'),
+      'a bare string',
+      { not: 'an error' },
+      new BaseError('an empty-cause BaseError'),
+    ]
+
+    for (const error of nonErrorInputs) {
+      expect(() => decodeBridgeError({ error })).not.toThrow()
+
+      const result = decodeBridgeError({ error })
+      expect(result).toBeDefined()
+      expect(ALL_KINDS).toContain(result.kind)
+      expect(result.message.length).toBeGreaterThan(0)
+    }
+  })
+
+  test('the generic unknown kind is reachable only for an unrecognised selector — no mapped-kind fixture falls through to it', () => {
+    for (const kind of ALL_KINDS) {
+      if (kind === 'unknown') continue
+
+      const result = decodeBridgeError(KIND_FIXTURES[kind])
+      expect(result.kind).not.toBe('unknown')
+    }
   })
 })
 
