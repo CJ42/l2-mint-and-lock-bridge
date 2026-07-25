@@ -2,6 +2,13 @@ import { getAddress, isAddress, zeroAddress, type Address } from 'viem'
 import { arbitrumSepolia, baseSepolia } from 'viem/chains'
 import deploymentAddresses from '../../../addresses.json'
 
+type RpcUrls = {
+  [chain: string]: {
+    default: string;
+    fallback: string;
+  };
+};
+
 function readAddress(value: string | undefined): Address | undefined {
   if (!value || !isAddress(value) || value === zeroAddress) return undefined
 
@@ -23,13 +30,18 @@ export const addresses = {
      readAddress(deploymentAddresses.arbitrumSepolia.wrappedUsdc),
 }
 
-export const rpcUrls = {
-  base:
-    process.env.NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL ??
-    baseSepolia.rpcUrls.default.http[0],
-  arbitrum:
-    process.env.NEXT_PUBLIC_ARBITRUM_SEPOLIA_RPC_URL ??
-    arbitrumSepolia.rpcUrls.default.http[0],
+/**
+ * @dev Always ensure 
+ */
+export const rpcUrls: RpcUrls = {
+  baseSepolia: {
+    default: baseSepolia.rpcUrls.default.http[0],
+    fallback: "https://base-sepolia.drpc.org"
+  },
+  arbitrumSepolia: {
+    default: arbitrumSepolia.rpcUrls.default.http[0],
+    fallback: "https://arbitrum-sepolia.drpc.org"
+  }
 }
 
 export const isBaseDeployed = Boolean(addresses.baseBridge && addresses.baseUsdc)
