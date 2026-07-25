@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   createPublicClient,
+  getAbiItem,
   http,
   fallback,
   type Address,
@@ -13,9 +14,20 @@ import {
 } from 'viem'
 import { arbitrumSepolia, baseSepolia } from 'viem/chains'
 
-import { bridgeAbi } from '@/lib/abis'
+import { collateralTokenBridgeAbi } from '@/lib/generated'
 import type { BridgeMessage } from '@/lib/bridge'
 import { addresses, rpcUrls, scanConfiguration } from '@/lib/config'
+
+// Both bridge contracts declare byte-identical BridgeInitiated/BridgeFinalized event
+// fragments, so resolving them from the collateral bridge ABI is correct for either chain.
+const bridgeInitiatedEvent = getAbiItem({
+  abi: collateralTokenBridgeAbi,
+  name: 'BridgeInitiated',
+})
+const bridgeFinalizedEvent = getAbiItem({
+  abi: collateralTokenBridgeAbi,
+  name: 'BridgeFinalized',
+})
 
 const baseClient = createPublicClient({
   chain: baseSepolia,
@@ -118,14 +130,14 @@ async function scanChain<TTransport extends Transport, TChain extends Chain>({
     const [initiatedLogs, finalizedLogs] = await Promise.all([
       client.getLogs({
         address: bridgeAddress,
-        event: bridgeAbi[0],
+        event: bridgeInitiatedEvent,
         fromBlock: chunkStart,
         toBlock: chunkEnd,
         strict: true,
       }),
       client.getLogs({
         address: bridgeAddress,
-        event: bridgeAbi[1],
+        event: bridgeFinalizedEvent,
         fromBlock: chunkStart,
         toBlock: chunkEnd,
         strict: true,

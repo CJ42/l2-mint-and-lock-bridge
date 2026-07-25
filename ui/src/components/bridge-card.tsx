@@ -20,7 +20,11 @@ import {
   useWriteContract,
 } from 'wagmi'
 
-import { bridgeAbi, erc20Abi } from '@/lib/abis'
+import {
+  collateralTokenBridgeAbi,
+  ierc20Abi,
+  syntheticTokenBridgeAbi,
+} from '@/lib/generated'
 import {
   chains,
   directions,
@@ -32,6 +36,13 @@ import {
 import { addresses, isBridgeDeployed } from '@/lib/config'
 
 import styles from './bridge-card.module.css'
+
+// Keyed lookup from the direction's action to the bridge ABI that declares it — avoids
+// duplicating this ternary at both bridge-call sites below.
+const bridgeAbiByAction = {
+  lock: collateralTokenBridgeAbi,
+  burn: syntheticTokenBridgeAbi,
+} as const
 
 interface BridgeCardProps {
   messages: BridgeMessage[]
@@ -74,7 +85,7 @@ export function BridgeCard({
   )
 
   const { data: baseBalance } = useReadContract({
-    abi: erc20Abi,
+    abi: ierc20Abi,
     address: addresses.baseUsdc,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
@@ -82,7 +93,7 @@ export function BridgeCard({
     query: { enabled: Boolean(addresses.baseUsdc && address) },
   })
   const { data: arbitrumBalance } = useReadContract({
-    abi: erc20Abi,
+    abi: ierc20Abi,
     address: addresses.arbitrumWusdc,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
@@ -93,7 +104,7 @@ export function BridgeCard({
     data: allowanceData,
     refetch: refetchAllowance,
   } = useReadContract({
-    abi: erc20Abi,
+    abi: ierc20Abi,
     address: tokenAddress,
     functionName: 'allowance',
     args: address && bridgeAddress ? [address, bridgeAddress] : undefined,
@@ -129,7 +140,7 @@ export function BridgeCard({
     if (!bridgeReceipt.data) return
 
     const initiatedLogs = parseEventLogs({
-      abi: bridgeAbi,
+      abi: bridgeAbiByAction[direction.action],
       eventName: 'BridgeInitiated',
       logs: bridgeReceipt.data.logs,
     })
@@ -158,7 +169,7 @@ export function BridgeCard({
     setFormError(null)
     try {
       const hash = await approveWrite.writeContractAsync({
-        abi: erc20Abi,
+        abi: ierc20Abi,
         address: tokenAddress,
         functionName: 'approve',
         args: [bridgeAddress, amount],
@@ -183,7 +194,7 @@ export function BridgeCard({
     onActiveMessageChange(undefined)
     try {
       const hash = await bridgeWrite.writeContractAsync({
-        abi: bridgeAbi,
+        abi: bridgeAbiByAction[direction.action],
         address: bridgeAddress,
         functionName: direction.action,
         args: [recipient, amount],
