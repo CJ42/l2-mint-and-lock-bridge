@@ -16,6 +16,9 @@ import { createStateStore } from "./state";
 import { createSubmitter, type Submission } from "./submitter";
 import { runWatcher } from "./watcher";
 
+const BASE_SEPOLIA_CHAIN_ID = BigInt(chains.baseSepolia.id);
+const ARBITRUM_SEPOLIA_CHAIN_ID = BigInt(chains.arbitrumSepolia.id);
+
 export async function main(): Promise<void> {
   const config = loadConfig();
   const account = privateKeyToAccount(loadRelayerPrivateKey());
@@ -136,31 +139,40 @@ function createLogHandler({
 }): (log: BridgeTxInitiatedLog) => void {
   const expectedOriginChainId =
     direction === "base-to-arbitrum"
-      ? BigInt(chains.baseSepolia.id)
-      : BigInt(chains.arbitrumSepolia.id);
+      ? BASE_SEPOLIA_CHAIN_ID
+      : ARBITRUM_SEPOLIA_CHAIN_ID;
+
   const expectedDestinationChainId =
     direction === "base-to-arbitrum"
-      ? BigInt(chains.arbitrumSepolia.id)
-      : BigInt(chains.baseSepolia.id);
+      ? BASE_SEPOLIA_CHAIN_ID
+      : ARBITRUM_SEPOLIA_CHAIN_ID;
 
   return function handleLog(log: BridgeTxInitiatedLog): void {
     const expectedSourceAddress =
       direction === "base-to-arbitrum"
         ? config.bridgeAddresses.baseSepolia
         : config.bridgeAddresses.arbitrumSepolia;
-    if (log.address.toLowerCase() !== expectedSourceAddress.toLowerCase())
+
+    if (log.address.toLowerCase() !== expectedSourceAddress.toLowerCase()) {
       throw new Error(`Unexpected source bridge address: ${log.address}`);
+    }
 
     const submission = reconstructMessage({
       log,
       canonicalToken: canonicalUsdcAddress,
     });
-    if (submission.message.originChainId !== expectedOriginChainId)
+
+    const { originChainId, destinationChainId } = submission.message;
+
+    if (originChainId !== expectedOriginChainId) {
       throw new Error(`Unexpected origin chain for ${submission.messageId}`);
-    if (submission.message.destinationChainId !== expectedDestinationChainId)
+    }
+
+    if (destinationChainId !== expectedDestinationChainId) {
       throw new Error(
         `Unexpected destination chain for ${submission.messageId}`,
       );
+    }
 
     enqueue(submission);
   };
