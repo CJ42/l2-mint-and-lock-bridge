@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test"
 import type { Hex } from "viem"
 import type { LogEntry } from "../src/logger"
-import { hashBridgeMessage, type BridgeMessage } from "../src/message"
+import { computeBridgeMessageId, type BridgeMessage } from "../src/message"
 import {
-  createSubmitter,
+  createSubmitterWithActions,
   maxAttempts,
   submitMessage,
   type Submission,
@@ -64,7 +64,7 @@ describe("submitter", () => {
   test("continues the queue after a permanently failed item", async () => {
     const logEntries: LogEntry[] = []
     const actions = createQueueActions()
-    const submitter = createSubmitter({
+    const submitter = createSubmitterWithActions({
       direction: "arbitrum-to-base",
       actions,
       log: (entry) => logEntries.push(entry),
@@ -102,7 +102,7 @@ function createSubmission({ nonce }: { nonce: bigint }): Submission {
     amount: 1_000_000n,
     nonce,
   }
-  return { message, messageId: hashBridgeMessage({ message }) }
+  return { message, messageId: computeBridgeMessageId({ message }) }
 }
 
 const txHash = `0x${"ab".repeat(32)}` as Hex

@@ -6,6 +6,11 @@ import { arbitrumSepolia, baseSepolia } from 'wagmi/chains'
 import { rpcUrls } from '@/lib/config'
 import { webSocketOptions } from '@/lib/live-clients'
 
+const BASE_SEPOLIA_RPC_URLS = [
+  http(rpcUrls.baseSepolia.default),
+  http(rpcUrls.baseSepolia.fallback)
+]
+
 export function getConfig() {
   return getDefaultConfig({
     appName: 'Mint & Lock Bridge',
@@ -18,23 +23,15 @@ export function getConfig() {
       [baseSepolia.id]: rpcUrls.baseSepolia.ws
         ? fallback([
             webSocket(rpcUrls.baseSepolia.ws, webSocketOptions),
-            http(rpcUrls.baseSepolia.default),
-            http(rpcUrls.baseSepolia.fallback),
+            ...BASE_SEPOLIA_RPC_URLS,
           ])
-        : fallback([
-            http(rpcUrls.baseSepolia.default),
-            http(rpcUrls.baseSepolia.fallback),
-          ]),
+        : fallback(BASE_SEPOLIA_RPC_URLS),
       [arbitrumSepolia.id]: rpcUrls.arbitrumSepolia.ws
         ? fallback([
             webSocket(rpcUrls.arbitrumSepolia.ws, webSocketOptions),
-            http(rpcUrls.arbitrumSepolia.default),
-            http(rpcUrls.arbitrumSepolia.fallback),
+            ...BASE_SEPOLIA_RPC_URLS,
           ])
-        : fallback([
-            http(rpcUrls.arbitrumSepolia.default),
-            http(rpcUrls.arbitrumSepolia.fallback),
-          ]),
+        : fallback(BASE_SEPOLIA_RPC_URLS),
     },
   })
 }

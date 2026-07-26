@@ -1,5 +1,6 @@
 import { parseAbi } from "viem"
 
+// Small ABI for simplicity here for just what the relayer needs
 export const bridgeAbi = parseAbi([
   "event BridgeTxInitiated(bytes32 indexed messageId, address indexed sender, address indexed recipient, uint256 amount, uint256 nonce, uint256 originChainId, uint256 destinationChainId)",
   "function processed(bytes32 messageId) view returns (bool)",
