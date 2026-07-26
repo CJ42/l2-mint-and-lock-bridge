@@ -59,35 +59,39 @@ The reverse path performs the same steps as above, with the following difference
 
 ### Bridge message ID format
 
-Every message ID of a bridge transaction is the keccak256 hash of the following properties:
+Every message ID of a bridge transaction is the keccak256 hash of the following properties.
 
-- origin chain ID
-- destination chain ID
-- canonical token address (USDC)
-- sender
-- recipient
-- amount (of tokens being bridged), 
-- per-sender nonce
-
-These arguments are `abi.encode` and padded according to the ABI specification format. 
-
-
-
-
+```javascript
+keccak256(
+  abi.encode(
+    originChainId,
+    destinationChainId,
+    tokenAddress,
+    sender,
+    recipient,
+    amount,
+    senderNonce
+  )
+);
+```
 
 ## Security, Trust model and tradeoffs
 
-- Chain IDs prevent cross-chain replay
-- nonces distinguish repeated transfers
-- destination-side `processed` mapping prevents duplicate finalization.
+### Smart Contracts
 
-The bridge intentionally trusts one relayer EOA via the `onlyRelayer` modifier in the smart contract.
+- Chain ID in the message ID prevents cross-chain replay.
+- nonces enable to prevent replay a bridge message twice.
+- destination-side `processed` mapping prevents duplicate finalization.
 
 The bridge contracts inherit `Ownable2Step` and `Pausable`, which allows a circuit breaker if the bridge or relayer is compromised.
 
-Authorization is simple and explicit, but compromise or censorship of that key can mint invalid claims or stop delivery. 
+The bridge contract use the `SafeERC20` library to ensure the bridge always integrate ERC20 compliant tokens, and reject non-standard tokens. For instance tokens like USDT that are missing return value. Such tokens can break `transferFrom` calls.
 
-The relayer only reads blocks five confirmations behind the origin head, which protects against shallow testnet reorgs. Production would use finalized L1 batch status. Per-sender nonces avoid global ordering
+### Relayer
+
+Decided to use the trusted relayer model for simplicity. The bridge intentionally trusts one relayer EOA via the `onlyRelayer` modifier in the smart contract.
+
+The relayer only reads blocks five confirmations behind the origin head, which protects against shallow testnet reorgs. Production would use finalized L1 batch status. Per-sender nonces avoid global ordering.
 
 <!-- The UI indexes recent logs directly. This removes backend infrastructure for the demo, but repeated 50,000-block scans do not scale. -->
 
@@ -102,7 +106,6 @@ The relayer only reads blocks five confirmations behind the origin head, which p
 | Rebalancing / third chain | Requires a liquidity model | Asset gateway registry and routers |
 | Dedicated indexer | Zero-infrastructure UI is sufficient here | Relayer ledger API or production indexer |
 | Real-USDC fork tests | Unit tests and live smoke testing cover the initial path | Base Sepolia fork test against deployed USDC bytecode |
-
 
 
 ## Deployment addresses
