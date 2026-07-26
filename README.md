@@ -1,6 +1,6 @@
 # L2 Mint-and-Lock Bridge
 
-A bidirectional bridge for Circle testnet USDC between Base Sepolia and Arbitrum Sepolia. Base USDC is locked as collateral and an equivalent 6-decimal `wUSDC` is minted on Arbitrum; returning burns `wUSDC` before releasing the original USDC.
+A bidirectional bridge for Circle testnet USDC between Base Sepolia and Arbitrum Sepolia.
 
 ![Bridge UI cover image](./screenshot.png)
 
@@ -22,31 +22,27 @@ _:_:_:_:_:_:[]:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:[]:_:_:_:_:_:_
             []       =========================       []
 ``` -->
 
-```text
-Base Sepolia                                      Arbitrum Sepolia
- user → CollateralTokenBridge → BridgeTxInitiated
-                                  │
-                         trusted relayer
-                                  │
-                                  └→ SyntheticTokenBridge → wUSDC
+## Architecture Overview
 
- user ← CollateralTokenBridge ← trusted relayer ← BridgeTxInitiated ← burn wUSDC
-```
+![Bridge flow and architecture](./architecture.png)
 
 ## Chains and token
 
 | Network | Chain ID | Asset | Contract |
 | --- | ---: | --- | --- |
-| Base Sepolia | 84532 | Circle testnet USDC | [`0x036C…CF7e`](https://sepolia.basescan.org/address/0x036CbD53842c5426634e7929541eC2318f3dCF7e) |
+| Base Sepolia | 84532 | Circle testnet USDC | [`0x036CbD53842c5426634e7929541eC2318f3dCF7e`](https://sepolia.basescan.org/address/0x036CbD53842c5426634e7929541eC2318f3dCF7e) |
 | Arbitrum Sepolia | 421614 | Wrapped USDC (`wUSDC`) | Set after deployment in `addresses.json` |
 
 This L2 Bridge showcases bridging testnet USDC, a real asset and a real ERC20 approval + `transferFrom`.
+
+Base Sepolia USDC is locked as collateral and an equivalent 6-decimal `wUSDC` is minted on Arbitrum Sepolia.
+Bridging back involves burning `wUSDC` on Arbitrum Sepolia before unlocking the original USDC on Base Sepolia.
 
 ## How it works? Flow
 
 The core invariant of the bridge is that USDC locked in the `CollateralTokenBridge` contract on Base Sepolia **MUST always be greater than or equal to the total supply of `wUSDC`** on Arbitrum Sepolia. (we factor the case if a user transfer arbitrarily with `CollateralTokenBridge` contract address as `recipient`).
 
-### Bridging: Base ➡ Arbitrum
+### Bridging: Base ➡ Arbitrum
 
 1. The user give as allowance to the `CollateralTokenBridge` the amount it wants to bridge. This is done by calling `approve(...)` on the USDC token contract.
 2. The user calls `bridgeTx(...)` on the `CollateralTokenBridge` contract. Under the hood, the bridge calls `transferFrom` to take the user's tokens and lock them in the smart contract.
@@ -54,11 +50,12 @@ The core invariant of the bridge is that USDC locked in the `CollateralTokenBrid
 4. The relayer waits five confirmations, validates the event's message ID, and calls `finalizeBridgeTx(...)` on the `SyntheticTokenBridge` contract on the destination chain.
 5. `SyntheticTokenBridge` marks the message processed and mints the same amount of `wUSDC`.
 
-### Bridging back: Base ⬅ Arbitrum
+### Bridging back: Base ⬅ Arbitrum
 
 The reverse path performs the same steps as above, with the following differences:
-- at step 2, the user calls `bridgeTx(...)` on the `SyntheticTokenBridge` contract; it burns the approved `wUSDC`.
-- the relayer completes the return path by calling `finalizeBridgeTx(...)` on the `CollateralTokenBridge`.
+- at step 2, the user calls `bridgeTx(...)` on the `SyntheticTokenBridge` contract, which burns the `wUSDC` via `burnFrom(...)`.
+- at step 4, the relayer completes the return path by calling `finalizeBridgeTx(...)` on the `CollateralTokenBridge`.
+- at step 5, the `CollateralTokenBridge` marks the message processed and unlock the same amount of USDC.
 
 ### Bridge message ID format
 

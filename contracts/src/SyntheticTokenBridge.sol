@@ -33,11 +33,16 @@ contract SyntheticTokenBridge is BridgeBase, ReentrancyGuardTransient {
     address public immutable CANONICAL_TOKEN;
     uint256 public immutable DESTINATION_CHAIN_ID;
 
-    constructor(address owner_, WrappedToken wrappedToken_, address canonicalToken_, uint256 destinationChainId_)
-        BridgeBase(owner_)
-    {
+    constructor(
+        address owner_,
+        WrappedToken wrappedToken_,
+        address canonicalToken_,
+        uint256 destinationChainId_
+    ) BridgeBase(owner_) {
         require(
-            address(wrappedToken_) != address(0) && canonicalToken_ != address(0), Errors.TokenCannotBeZeroAddress()
+            address(wrappedToken_) != address(0) &&
+                canonicalToken_ != address(0),
+            Errors.TokenCannotBeZeroAddress()
         );
         wrappedToken = wrappedToken_;
         CANONICAL_TOKEN = canonicalToken_;
@@ -45,15 +50,20 @@ contract SyntheticTokenBridge is BridgeBase, ReentrancyGuardTransient {
     }
 
     /// @notice Finalizes a bridge transaction by minting wrapped USDC.
-    function finalizeBridgeTx(Types.BridgeMessage calldata message) external onlyRelayer whenNotPaused nonReentrant {
+    function finalizeBridgeTx(
+        Types.BridgeMessage calldata message
+    ) external onlyRelayer whenNotPaused nonReentrant {
         bytes32 id = _consumeMessage(message);
 
         wrappedToken.mint(message.recipient, message.amount);
-        emit BridgeFinalized(id, message.recipient, message.amount);
+        emit BridgeTxFinalized(id, message.recipient, message.amount);
     }
 
     /// @notice Burns approved wrapped USDC and emits an Arbitrum-to-Base bridge message.
-    function bridgeTx(address recipient, uint256 amount) external whenNotPaused nonReentrant {
+    function bridgeTx(
+        address recipient,
+        uint256 amount
+    ) external whenNotPaused nonReentrant {
         _validateInputs(recipient, amount);
 
         uint256 nonce = nonces[msg.sender]++;
@@ -68,7 +78,15 @@ contract SyntheticTokenBridge is BridgeBase, ReentrancyGuardTransient {
         });
         bytes32 messageId = message.computeBridgeMessageId();
 
-        emit BridgeTxInitiated(messageId, msg.sender, recipient, amount, nonce, block.chainid, DESTINATION_CHAIN_ID);
+        emit BridgeTxInitiated({
+            messageId: messageId,
+            sender: msg.sender,
+            recipient: recipient,
+            amount: amount,
+            nonce: nonce,
+            originChainId: block.chainid,
+            destinationChainId: DESTINATION_CHAIN_ID
+        });
 
         wrappedToken.burnFrom(msg.sender, amount);
     }
