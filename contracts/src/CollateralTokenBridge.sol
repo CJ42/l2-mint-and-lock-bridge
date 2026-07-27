@@ -38,24 +38,14 @@ contract CollateralTokenBridge is BridgeBase, ReentrancyGuardTransient {
     IERC20 public immutable TOKEN;
     uint256 public immutable DESTINATION_CHAIN_ID;
 
-    constructor(
-        address owner_,
-        IERC20 token_,
-        uint256 destinationChainId_
-    ) BridgeBase(owner_) {
-        require(
-            address(token_) != address(0),
-            Errors.TokenCannotBeZeroAddress()
-        );
+    constructor(address owner_, IERC20 token_, uint256 destinationChainId_) BridgeBase(owner_) {
+        require(address(token_) != address(0), Errors.TokenCannotBeZeroAddress());
         TOKEN = token_;
         DESTINATION_CHAIN_ID = destinationChainId_;
     }
 
     /// @notice Locks canonical TOKEN and emits a bridge message.
-    function bridgeTx(
-        address recipient,
-        uint256 amount
-    ) external whenNotPaused nonReentrant {
+    function bridgeTx(address recipient, uint256 amount) external whenNotPaused nonReentrant {
         _validateInputs(recipient, amount);
 
         uint256 nonce = nonces[msg.sender]++;
@@ -85,9 +75,7 @@ contract CollateralTokenBridge is BridgeBase, ReentrancyGuardTransient {
     }
 
     /// @notice Finalizes a bridge transaction by unlocking canonical TOKEN.
-    function finalizeBridgeTx(
-        Types.BridgeMessage calldata message
-    ) external onlyRelayer whenNotPaused nonReentrant {
+    function finalizeBridgeTx(Types.BridgeMessage calldata message) external onlyRelayer whenNotPaused nonReentrant {
         bytes32 messageId = _consumeMessage(message);
 
         emit BridgeTxFinalized(messageId, message.recipient, message.amount);

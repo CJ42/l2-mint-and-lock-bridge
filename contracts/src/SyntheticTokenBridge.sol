@@ -33,16 +33,11 @@ contract SyntheticTokenBridge is BridgeBase, ReentrancyGuardTransient {
     address public immutable CANONICAL_TOKEN;
     uint256 public immutable DESTINATION_CHAIN_ID;
 
-    constructor(
-        address owner_,
-        WrappedToken wrappedToken_,
-        address canonicalToken_,
-        uint256 destinationChainId_
-    ) BridgeBase(owner_) {
+    constructor(address owner_, WrappedToken wrappedToken_, address canonicalToken_, uint256 destinationChainId_)
+        BridgeBase(owner_)
+    {
         require(
-            address(wrappedToken_) != address(0) &&
-                canonicalToken_ != address(0),
-            Errors.TokenCannotBeZeroAddress()
+            address(wrappedToken_) != address(0) && canonicalToken_ != address(0), Errors.TokenCannotBeZeroAddress()
         );
         wrappedToken = wrappedToken_;
         CANONICAL_TOKEN = canonicalToken_;
@@ -50,9 +45,7 @@ contract SyntheticTokenBridge is BridgeBase, ReentrancyGuardTransient {
     }
 
     /// @notice Finalizes a bridge transaction by minting wrapped USDC.
-    function finalizeBridgeTx(
-        Types.BridgeMessage calldata message
-    ) external onlyRelayer whenNotPaused nonReentrant {
+    function finalizeBridgeTx(Types.BridgeMessage calldata message) external onlyRelayer whenNotPaused nonReentrant {
         bytes32 id = _consumeMessage(message);
 
         wrappedToken.mint(message.recipient, message.amount);
@@ -60,10 +53,7 @@ contract SyntheticTokenBridge is BridgeBase, ReentrancyGuardTransient {
     }
 
     /// @notice Burns approved wrapped USDC and emits an Arbitrum-to-Base bridge message.
-    function bridgeTx(
-        address recipient,
-        uint256 amount
-    ) external whenNotPaused nonReentrant {
+    function bridgeTx(address recipient, uint256 amount) external whenNotPaused nonReentrant {
         _validateInputs(recipient, amount);
 
         uint256 nonce = nonces[msg.sender]++;
