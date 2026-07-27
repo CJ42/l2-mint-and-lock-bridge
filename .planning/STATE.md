@@ -82,7 +82,7 @@ Recent decisions affecting current work:
 - [Phase 01]: 01-02: gas shortfall computed from three ordered sources (explicit gasEstimate -> metaMessages parse -> fixed 0.0004 default) with an isComputed flag, because viem's InsufficientFundsError carries no gas/fee fields; native ETH uses formatEther + ceil-to-4dp, never the 6-decimal token formatter
 - [Phase 01]: 01-02: panic wording and the test's Error(string)/Panic(uint256) fixture fragments are declared locally, because viem/constants and solidityError/solidityPanic are not in viem's public subpath export allow-list
 - [Phase 01]: 01-03: BridgeFlowState is the sole semantic derivation for button and stepper; failure has highest precedence, carries the decoded error and failed step, and collapses only in-flight statuses
-- [Phase 01]: 01-03: transaction progress maps directly from wagmi write pending and receipt fetching/success flags; relay progress comes only from BridgeInitiated/BridgeFinalized events and never has a pending state
+- [Phase 01]: 01-03: transaction progress maps directly from wagmi write pending and receipt fetching/success flags; relay progress comes only from BridgeTxInitiated/BridgeFinalized events and never has a pending state
 - [Phase 02]: 02-01: PublicNode is the selected no-key WSS provider for Base Sepolia and Arbitrum Sepolia after all four PublicNode/dRPC candidates delivered real eth_subscription notifications
 - [Phase 02]: 02-01: live clients and wagmi both pin webSocket at fallback index 0 with no ranking options; health is an explicit four-member TransportMode and removed logs roll confirmation back by messageId
 

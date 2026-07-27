@@ -2,13 +2,13 @@
   "baseSepolia": {
     "chainId": 84532,
     "usdc": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
-    "collateralBridge": "0x330802C5F681f1cf46FE32bb3999F14E47DAbfC5",
-    "deployBlock": 0
+    "collateralBridge": "0x9C5DB618c29e99e71BC6aD10c4Cc3c5544a31921",
+    "deployBlock": 44658723
   },
   "arbitrumSepolia": {
     "chainId": 421614,
-    "wrappedUsdc": "0x077863e898d0B9cC54478767327C79afFc0b17a6",
-    "syntheticBridge": "0x796b1fdcDE61280EF51B94f5a68132941856ec0c",
-    "deployBlock": 0
+    "wrappedUsdc": "0x4fd6979AfE5C83653ef1d4ffd0581A491a53DEF0",
+    "syntheticBridge": "0x3096e98A82Dd7a1ADFAA71d0DEF8F7Cfd3d43eA0",
+    "deployBlock": 291601233
   }
 }

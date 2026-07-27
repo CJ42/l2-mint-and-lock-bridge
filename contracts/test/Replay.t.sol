@@ -11,51 +11,51 @@ import {TestSetup} from "./TestSetup.sol";
 using {BridgeLib.computeBridgeMessageId} for Types.BridgeMessage;
 
 contract ReplayTest is TestSetup {
-    function testMintRejectsReplay() public {
+    function testFinalizeBridgeTxRejectsReplayOnSyntheticBridge() public {
         vm.chainId(ARBITRUM_CHAIN_ID);
         Types.BridgeMessage memory message = baseToArbitrumMessage(0);
         bytes32 id = message.computeBridgeMessageId();
 
         vm.prank(relayer);
-        syntheticBridge.mint(message);
+        syntheticBridge.finalizeBridgeTx(message);
 
         assertTrue(syntheticBridge.processed(id));
         vm.expectRevert(abi.encodeWithSelector(Errors.BridgeMessageAlreadyProcessed.selector, id));
         vm.prank(relayer);
-        syntheticBridge.mint(message);
+        syntheticBridge.finalizeBridgeTx(message);
     }
 
-    function testUnlockRejectsReplay() public {
+    function testFinalizeBridgeTxRejectsReplayOnCollateralBridge() public {
         vm.chainId(BASE_CHAIN_ID);
         Types.BridgeMessage memory message = arbitrumToBaseMessage(0);
 
         vm.prank(relayer);
-        collateralBridge.unlock(message);
+        collateralBridge.finalizeBridgeTx(message);
 
         vm.expectRevert(
             abi.encodeWithSelector(Errors.BridgeMessageAlreadyProcessed.selector, message.computeBridgeMessageId())
         );
         vm.prank(relayer);
-        collateralBridge.unlock(message);
+        collateralBridge.finalizeBridgeTx(message);
     }
 
-    function testMintRejectsWrongDestination() public {
+    function testSyntheticFinalizeBridgeTxRejectsWrongDestination() public {
         vm.chainId(BASE_CHAIN_ID);
 
         vm.expectRevert(
             abi.encodeWithSelector(Errors.InvalidDestinationChainId.selector, BASE_CHAIN_ID, ARBITRUM_CHAIN_ID)
         );
         vm.prank(relayer);
-        syntheticBridge.mint(baseToArbitrumMessage(0));
+        syntheticBridge.finalizeBridgeTx(baseToArbitrumMessage(0));
     }
 
-    function testUnlockRejectsWrongDestination() public {
+    function testCollateralFinalizeBridgeTxRejectsWrongDestination() public {
         vm.chainId(ARBITRUM_CHAIN_ID);
 
         vm.expectRevert(
             abi.encodeWithSelector(Errors.InvalidDestinationChainId.selector, ARBITRUM_CHAIN_ID, BASE_CHAIN_ID)
         );
         vm.prank(relayer);
-        collateralBridge.unlock(arbitrumToBaseMessage(0));
+        collateralBridge.finalizeBridgeTx(arbitrumToBaseMessage(0));
     }
 }

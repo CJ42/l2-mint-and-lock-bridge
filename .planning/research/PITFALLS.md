@@ -59,7 +59,7 @@ Config/setup phase, before the subscription hook is built — pin down the exact
 ### Pitfall 3: Missed events during the reconnect gap, and duplicate/reordered events on resubscribe
 
 **What goes wrong:**
-Every `eth_subscribe` reconnect creates a brand-new subscription starting from "now" — there is no server-side replay of what happened while disconnected. Any `BridgeInitiated`/`BridgeFinalized` event emitted during the gap is silently lost unless the client explicitly backfills. Separately, on manual reconnect logic that re-subscribes without deduping against already-known events, the same event can be delivered twice (once before disconnect finished processing, once after resubscribe re-scans overlapping range), corrupting a naive "append to list" reducer.
+Every `eth_subscribe` reconnect creates a brand-new subscription starting from "now" — there is no server-side replay of what happened while disconnected. Any `BridgeTxInitiated`/`BridgeFinalized` event emitted during the gap is silently lost unless the client explicitly backfills. Separately, on manual reconnect logic that re-subscribes without deduping against already-known events, the same event can be delivered twice (once before disconnect finished processing, once after resubscribe re-scans overlapping range), corrupting a naive "append to list" reducer.
 
 **Why it happens:**
 `eth_subscribe`/`watchContractEvent` is a live tail, not a durable log; developers conflate "I have a live subscription" with "I will never miss anything," and skip the reconciliation step needed on every (re)connect.

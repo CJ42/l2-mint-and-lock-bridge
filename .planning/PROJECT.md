@@ -30,7 +30,7 @@ actual on-chain error.
   retry with exponential backoff, checkpointed `state.json`, structured JSON logging — existing
 - ✓ Next.js UI: RainbowKit wallet connection, direction flip, amount/recipient inputs with
   validation, balance + allowance reads, message explorer — existing
-- ✓ Bridge message list derived from on-chain `BridgeInitiated`/`BridgeFinalized` logs — existing
+- ✓ Bridge message list derived from on-chain `BridgeTxInitiated`/`BridgeFinalized` logs — existing
   (to be replaced by live subscriptions in this milestone)
 - ✓ RPC endpoint failover via viem `fallback()` transports — existing
 
@@ -67,7 +67,7 @@ actual on-chain error.
   shadcn is not initialised; a design-system migration mid-milestone costs more than the
   stepper is worth. Hand-build the stepper, spinner and button in the existing pattern.
 - **Relayer changes** — coarse states (`queued → relaying → done`) are fully derivable from
-  `BridgeInitiated`/`BridgeFinalized` events, so no relayer-side signalling channel is needed.
+  `BridgeTxInitiated`/`BridgeFinalized` events, so no relayer-side signalling channel is needed.
 - **Contract changes** — the custom errors already carry the evidence the UI needs; no new
   errors, no redeploy.
 - **Expandable raw relayer detail** (attempt counts, simulation failures, terminal errors) —
@@ -123,7 +123,7 @@ actual on-chain error.
 |----------|-----------|---------|
 | Hand-build the stepper in CSS Modules instead of adopting shadcn/ui | shadcn is not initialised, the UI is CSS Modules, and the referenced stepper is a third-party registry component; migration cost outweighs the benefit for one component. Overrides `TX_FLOW.md`. | — Pending |
 | Approve the exact amount on every bridge, never skip on sufficient allowance | Guarantees all three stepper steps always execute, so the flow is predictable and demonstrable. Costs the user one extra transaction per bridge. | — Pending |
-| Observe relay progress through on-chain events, not a relayer-side channel | `BridgeInitiated` → `BridgeFinalized` fully determines the coarse states; avoids standing up and hosting a backend the UI has never had. | — Pending |
+| Observe relay progress through on-chain events, not a relayer-side channel | `BridgeTxInitiated` → `BridgeFinalized` fully determines the coarse states; avoids standing up and hosting a backend the UI has never had. | — Pending |
 | Coarse relay states only (`queued → relaying → done`) | Keeps the flow legible for a normal user. Trade-off accepted: a stuck message reads as "slow" with no further explanation. | — Pending |
 | WebSocket subscriptions replace `getLogs` polling, with HTTP fallback | Live state transitions without a 6-second lag; fallback covers flaky public testnet WS endpoints. | — Pending |
 | No contract or relayer changes in this milestone | Custom errors already carry the needed evidence; coarse states need no new signal. Keeps scope UI-only. | — Pending |

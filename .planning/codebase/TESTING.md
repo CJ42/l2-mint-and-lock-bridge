@@ -66,7 +66,7 @@ relayer/
 ```solidity
 // contracts/test/BridgeUnit.t.sol
 contract BridgeUnitTest is TestSetup {
-    event BridgeInitiated(
+    event BridgeTxInitiated(
         bytes32 indexed messageId,
         address indexed sender,
         // ... event params
@@ -89,8 +89,8 @@ contract BridgeUnitTest is TestSetup {
         usdc.approve(address(collateralBridge), AMOUNT);
         
         vm.expectEmit(true, true, true, true);
-        emit BridgeInitiated(...);
-        collateralBridge.lock(recipient, AMOUNT);
+        emit BridgeTxInitiated(...);
+        collateralBridge.bridgeTx(recipient, AMOUNT);
         vm.stopPrank();
         
         assertEq(collateralBridge.nonces(user), 1);
@@ -161,11 +161,11 @@ describe("bridge message integrity", () => {
 ```solidity
 // Prank (single tx)
 vm.prank(user);
-bridge.lock(recipient, AMOUNT);
+bridge.bridgeTx(recipient, AMOUNT);
 
 // Prank range
 vm.startPrank(relayer);
-syntheticBridge.mint(message);
+syntheticBridge.finalizeBridgeTx(message);
 vm.stopPrank();
 
 // Chain ID spoofing
@@ -173,8 +173,8 @@ vm.chainId(BASE_CHAIN_ID);
 
 // Event expectation
 vm.expectEmit(true, true, true, true);  // indexed, indexed, indexed, non-indexed match
-emit BridgeInitiated(...);
-collateralBridge.lock(recipient, AMOUNT);
+emit BridgeTxInitiated(...);
+collateralBridge.bridgeTx(recipient, AMOUNT);
 ```
 
 **Patterns - TypeScript:**
@@ -200,7 +200,7 @@ function createLog({
 }: {
   message: BridgeMessage
   messageId: Hex
-}): BridgeInitiatedLog {
+}): BridgeTxInitiatedLog {
   return {
     address: "0x3333333333333333333333333333333333333333" as Address,
     args: {
@@ -237,7 +237,7 @@ function createLog({
 - TypeScript: Builder functions in test file:
   ```typescript
   function createMessage(): BridgeMessage { ... }
-  function createLog({ message, messageId }): BridgeInitiatedLog { ... }
+  function createLog({ message, messageId }): BridgeTxInitiatedLog { ... }
   function createPath(): string { ... }  // For file-based tests
   ```
 
@@ -316,7 +316,7 @@ test("rejects an emitted message id that does not match", () => {
 function testOnlyRelayerCanFinalize() public {
   vm.expectRevert();  // Expects revert, no specific reason
   vm.prank(attacker);
-  syntheticBridge.mint(message);
+  syntheticBridge.finalizeBridgeTx(message);
 }
 ```
 
@@ -330,7 +330,7 @@ function testLockEmitsExactMessage() public {
   bytes32 id = message.computeBridgeMessageId();
   
   vm.expectEmit(true, true, true, true);  // 4 params: all indexed
-  emit BridgeInitiated(
+  emit BridgeTxInitiated(
     id,
     user,
     recipient,
@@ -340,7 +340,7 @@ function testLockEmitsExactMessage() public {
     ARBITRUM_CHAIN_ID
   );
   
-  collateralBridge.lock(recipient, AMOUNT);
+  collateralBridge.bridgeTx(recipient, AMOUNT);
   vm.stopPrank();
 }
 ```

@@ -151,7 +151,7 @@
 - Not detected - Relayer polls chains via RPC, does not send webhooks
 
 **Event Watching:**
-- Relayer watches for `BridgeInitiated` events on both chains
+- Relayer watches for `BridgeTxInitiated` events on both chains
 - Implemented in `relayer/src/watcher.ts` via viem's polling mechanism
 - Processes events and submits cross-chain messages via `relayer/src/submitter.ts`
 

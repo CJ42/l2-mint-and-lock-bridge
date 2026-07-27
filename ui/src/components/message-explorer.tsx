@@ -28,8 +28,7 @@ export function MessageExplorer({
     <section className={styles.explorer} aria-labelledby="messages-heading">
       <div className={styles.heading}>
         <div>
-          <p className={styles.eyebrow}>Live event index</p>
-          <h2 id="messages-heading">Message explorer</h2>
+          <h2 id="messages-heading">Bridge Transactions explorer</h2>
         </div>
         <div className={styles.live}>
           <span />
@@ -69,11 +68,11 @@ export function MessageExplorer({
       </div>
 
       {error && <p className={styles.error}>Scan warning: {error}</p>}
-      <p className={styles.note}>
+      {/* <p className={styles.note}>
         This browser scans roughly 50,000 blocks on both chains in 2,000-block
         chunks. It needs no indexer, but production traffic should use an
         indexed API.
-      </p>
+      </p> */}
     </section>
   )
 }

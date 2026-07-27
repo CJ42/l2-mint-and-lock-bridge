@@ -152,7 +152,7 @@ Phase 3 must map these fields as follows:
 - `isPrompting` ← `useWriteContract().isPending`; this spans the open wallet prompt through node acceptance.
 - `isConfirming` ← `useWaitForTransactionReceipt().isFetching`; this covers receipt polling.
 - `isConfirmed` ← `useWaitForTransactionReceipt().isSuccess`; this means mined on the origin chain, not relayed.
-- `relay.isInitiated` ← observed origin-chain `BridgeInitiated`.
+- `relay.isInitiated` ← observed origin-chain `BridgeTxInitiated`.
 - `relay.isFinalized` ← observed destination-chain `BridgeFinalized`.
 
 ## Existing `getActionState()` Coverage

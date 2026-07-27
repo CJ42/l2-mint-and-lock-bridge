@@ -21,7 +21,7 @@ The L2 Mint and Lock Bridge is a cross-chain token bridge connecting Base Sepoli
 │  Solidity 0.8.27 · OpenZeppelin · Reentrancy Guards               │
 │  `contracts/src/` (CollateralTokenBridge, SyntheticTokenBridge)    │
 └────────────────┬────────────────────────────┬───────────────────────┘
-                 │ BridgeInitiated events      │ User calls
+                 │ BridgeTxInitiated events      │ User calls
                  │ (logs indexed by watcher)   │
                  ▼                            ▼
          ┌──────────────────┐        ┌──────────────────┐
@@ -58,7 +58,7 @@ The L2 Mint and Lock Bridge is a cross-chain token bridge connecting Base Sepoli
 - **Relayer-submitted:** User calls lock/burn; relayer submits corresponding mint/unlock
 - **No message signing:** Relayer is trusted via onlyRelayer modifier (TODO: EIP-712 signatures in production)
 - **Nonce-based replay protection:** Per-sender nonce incremented on lock/burn
-- **Event polling:** Relayer polls for BridgeInitiated logs with confirmation buffer
+- **Event polling:** Relayer polls for BridgeTxInitiated logs with confirmation buffer
 
 ## Layers
 
@@ -90,17 +90,17 @@ The L2 Mint and Lock Bridge is a cross-chain token bridge connecting Base Sepoli
 1. **User calls lock() on Base** (`ui/src/components/bridge-card.tsx` → `contracts/src/CollateralTokenBridge.sol:lock()`)
    - User submits transaction via UI ConnectButton + bridge-card component
    - Contract increments sender's nonce, creates BridgeMessage, validates inputs
-   - Event `BridgeInitiated` is emitted with messageId, sender, recipient, amount, nonce, chain IDs
+   - Event `BridgeTxInitiated` is emitted with messageId, sender, recipient, amount, nonce, chain IDs
    - USDC is transferred from user to contract via `safeTransferFrom()`
 
-2. **Relayer polls for BridgeInitiated events** (`relayer/src/watcher.ts:runWatcher()`)
+2. **Relayer polls for BridgeTxInitiated events** (`relayer/src/watcher.ts:runWatcher()`)
    - Polls every 4 seconds (configurable `POLL_INTERVAL_MS`)
    - Queries logs from `(lastCheckpoint + 1)` to `(currentBlock - 5)` confirmations
    - Processes logs in batches of 2,000 blocks max to avoid RPC timeouts
    - Updates checkpoint in state.json after each batch
 
 3. **Relayer reconstructs message** (`relayer/src/message.ts:reconstructMessage()`)
-   - Extracts message from BridgeInitiated log
+   - Extracts message from BridgeTxInitiated log
    - Computes messageId to verify against log-provided messageId
    - Validates originChainId == baseSepolia.id and destinationChainId == arbitrumSepolia.id
    - Enqueues Submission to baseToArbitrum submitter
@@ -122,7 +122,7 @@ The L2 Mint and Lock Bridge is a cross-chain token bridge connecting Base Sepoli
 
 Identical flow in reverse:
 1. User calls burn() on Arbitrum Sepolia
-2. Relayer polls for BridgeInitiated events on Arbitrum
+2. Relayer polls for BridgeTxInitiated events on Arbitrum
 3. Relayer submits unlock() to Base Sepolia
 
 **State Management:**
@@ -170,10 +170,10 @@ Identical flow in reverse:
   - Fetch and display messages via useBridgeMessages hook
 
 **Contract Entry Points:**
-- `CollateralTokenBridge.lock()` - User locks canonical tokens
-- `CollateralTokenBridge.unlock()` - Relayer mints wrapped tokens on destination
-- `SyntheticTokenBridge.burn()` - User burns wrapped tokens
-- `SyntheticTokenBridge.mint()` - Relayer unlocks canonical tokens on destination
+- `CollateralTokenBridge.bridgeTx()` - User locks canonical tokens
+- `CollateralTokenBridge.finalizeBridgeTx()` - Relayer unlocks canonical tokens on destination
+- `SyntheticTokenBridge.bridgeTx()` - User burns wrapped tokens
+- `SyntheticTokenBridge.finalizeBridgeTx()` - Relayer mints wrapped tokens on destination
 
 ## Architectural Constraints
 

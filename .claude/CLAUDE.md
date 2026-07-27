@@ -160,8 +160,8 @@ actual on-chain error.
 - Use custom errors (not `require` strings) with parameters: `error NotRelayer(address invalidAddress);`
 - Throw custom errors with named parameters: `require(..., Errors.NotRelayer({invalidAddress: msg.sender}))`
 - Validation is done in separate functions like `_validateInputs()` before state changes
-- Throw `new Error()` with descriptive messages: `throw new Error("BridgeInitiated log is missing required arguments")`
-- Validation errors include context: `throw new Error(\`BridgeInitiated messageId mismatch: emitted ${args.messageId}, computed ${computedMessageId}\`)`
+- Throw `new Error()` with descriptive messages: `throw new Error("BridgeTxInitiated log is missing required arguments")`
+- Validation errors include context: `throw new Error(\`BridgeTxInitiated messageId mismatch: emitted ${args.messageId}, computed ${computedMessageId}\`)`
 - In React components, set state for errors: `setFormError(...)` or return error in custom hook result: `{ messages, isLoading, error: string | null, ... }`
 - Relayer: Use structured JSON logging with error status
 
@@ -236,7 +236,7 @@ actual on-chain error.
 - **Relayer-submitted:** User calls lock/burn; relayer submits corresponding mint/unlock
 - **No message signing:** Relayer is trusted via onlyRelayer modifier (TODO: EIP-712 signatures in production)
 - **Nonce-based replay protection:** Per-sender nonce incremented on lock/burn
-- **Event polling:** Relayer polls for BridgeInitiated logs with confirmation buffer
+- **Event polling:** Relayer polls for BridgeTxInitiated logs with confirmation buffer
 
 ## Layers
 
@@ -286,10 +286,10 @@ actual on-chain error.
 - Location: `ui/src/app/page.tsx`
 - Triggers: Browser navigation to `/`
 - Responsibilities:
-- `CollateralTokenBridge.lock()` - User locks canonical tokens
-- `CollateralTokenBridge.unlock()` - Relayer mints wrapped tokens on destination
-- `SyntheticTokenBridge.burn()` - User burns wrapped tokens
-- `SyntheticTokenBridge.mint()` - Relayer unlocks canonical tokens on destination
+- `CollateralTokenBridge.bridgeTx()` - User locks canonical tokens
+- `CollateralTokenBridge.finalizeBridgeTx()` - Relayer unlocks canonical tokens on destination
+- `SyntheticTokenBridge.bridgeTx()` - User burns wrapped tokens
+- `SyntheticTokenBridge.finalizeBridgeTx()` - Relayer mints wrapped tokens on destination
 
 ## Architectural Constraints
 

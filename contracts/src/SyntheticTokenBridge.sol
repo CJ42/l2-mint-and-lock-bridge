@@ -44,16 +44,16 @@ contract SyntheticTokenBridge is BridgeBase, ReentrancyGuardTransient {
         DESTINATION_CHAIN_ID = destinationChainId_;
     }
 
-    /// @notice Mints wrapped USDC after a canonical USDC lock.
-    function mint(Types.BridgeMessage calldata message) external onlyRelayer whenNotPaused nonReentrant {
+    /// @notice Finalizes a bridge transaction by minting wrapped USDC.
+    function finalizeBridgeTx(Types.BridgeMessage calldata message) external onlyRelayer whenNotPaused nonReentrant {
         bytes32 id = _consumeMessage(message);
 
         wrappedToken.mint(message.recipient, message.amount);
-        emit BridgeFinalized(id, message.recipient, message.amount);
+        emit BridgeTxFinalized(id, message.recipient, message.amount);
     }
 
     /// @notice Burns approved wrapped USDC and emits an Arbitrum-to-Base bridge message.
-    function burn(address recipient, uint256 amount) external whenNotPaused nonReentrant {
+    function bridgeTx(address recipient, uint256 amount) external whenNotPaused nonReentrant {
         _validateInputs(recipient, amount);
 
         uint256 nonce = nonces[msg.sender]++;
@@ -68,7 +68,15 @@ contract SyntheticTokenBridge is BridgeBase, ReentrancyGuardTransient {
         });
         bytes32 messageId = message.computeBridgeMessageId();
 
-        emit BridgeInitiated(messageId, msg.sender, recipient, amount, nonce, block.chainid, DESTINATION_CHAIN_ID);
+        emit BridgeTxInitiated({
+            messageId: messageId,
+            sender: msg.sender,
+            recipient: recipient,
+            amount: amount,
+            nonce: nonce,
+            originChainId: block.chainid,
+            destinationChainId: DESTINATION_CHAIN_ID
+        });
 
         wrappedToken.burnFrom(msg.sender, amount);
     }

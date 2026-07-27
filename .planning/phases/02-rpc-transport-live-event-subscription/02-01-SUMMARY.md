@@ -11,7 +11,7 @@ provides:
   - "Repeatable four-candidate WSS smoke test requiring a real eth_subscription notification"
   - "Verified PublicNode WSS constants for Base Sepolia and Arbitrum Sepolia"
   - "WebSocket-first production live clients and matching wagmi transports"
-  - "Named BridgeInitiated and BridgeFinalized event fragments"
+  - "Named BridgeTxInitiated and BridgeFinalized event fragments"
   - "End-to-end production-client subscription and 2,000-block getLogs probe"
   - "Pure transport health, staleness, messageId dedupe, and reorg rollback primitives"
 affects: [02-02, 02-03, 02-04, phase-3]

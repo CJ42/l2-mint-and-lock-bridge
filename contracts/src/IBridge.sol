@@ -2,7 +2,7 @@
 pragma solidity ^0.8.27;
 
 interface IBridge {
-    event BridgeInitiated(
+    event BridgeTxInitiated(
         bytes32 indexed messageId,
         address indexed sender,
         address indexed recipient,
@@ -11,6 +11,6 @@ interface IBridge {
         uint256 originChainId,
         uint256 destinationChainId
     );
-    event BridgeFinalized(bytes32 indexed messageId, address indexed recipient, uint256 amount);
+    event BridgeTxFinalized(bytes32 indexed messageId, address indexed recipient, uint256 amount);
     event RelayerUpdated(address indexed previousRelayer, address indexed newRelayer);
 }

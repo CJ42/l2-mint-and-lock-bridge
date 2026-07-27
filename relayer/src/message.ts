@@ -16,7 +16,7 @@ export interface BridgeMessage {
   nonce: bigint
 }
 
-export interface BridgeInitiatedLog {
+export interface BridgeTxInitiatedLog {
   address: Address
   args: {
     messageId?: Hex
@@ -36,7 +36,7 @@ export function reconstructMessage({
   log,
   canonicalToken,
 }: {
-  log: BridgeInitiatedLog
+  log: BridgeTxInitiatedLog
   canonicalToken: Address
 }): { message: BridgeMessage; messageId: Hex } {
   const { args } = log
@@ -49,7 +49,7 @@ export function reconstructMessage({
     args.originChainId === undefined ||
     args.destinationChainId === undefined
   )
-    throw new Error("BridgeInitiated log is missing required arguments")
+    throw new Error("BridgeTxInitiated log is missing required arguments")
 
   const message: BridgeMessage = {
     originChainId: args.originChainId,
@@ -60,35 +60,37 @@ export function reconstructMessage({
     amount: args.amount,
     nonce: args.nonce,
   }
-  const computedMessageId = hashBridgeMessage({ message })
+  const computedMessageId = computeBridgeMessageId({ message })
   if (computedMessageId.toLowerCase() !== args.messageId.toLowerCase())
     throw new Error(
-      `BridgeInitiated messageId mismatch: emitted ${args.messageId}, computed ${computedMessageId}`,
+      `BridgeTxInitiated messageId mismatch: emitted ${args.messageId}, computed ${computedMessageId}`,
     )
 
   return { message, messageId: computedMessageId }
 }
 
-export function hashBridgeMessage({ message }: { message: BridgeMessage }): Hex {
-  return keccak256(
-    encodeAbiParameters(messageParameters, [
-      message.originChainId,
-      message.destinationChainId,
-      message.token,
-      message.sender,
-      message.recipient,
-      message.amount,
-      message.nonce,
-    ]),
-  )
+export function computeBridgeMessageId({ message }: { message: BridgeMessage }): Hex {
+  const messageParameters = [
+    { type: "uint256", name: "originChainId" },
+    { type: "uint256", name: "destinationChainId" },
+    { type: "address", name: "token" },
+    { type: "address", name: "sender" },
+    { type: "address", name: "recipient" },
+    { type: "uint256", name: "amount" },
+    { type: "uint256", name: "nonce" },
+  ] as const
+
+  const encodedMessageParams = encodeAbiParameters(messageParameters, [
+    message.originChainId,
+    message.destinationChainId,
+    message.token,
+    message.sender,
+    message.recipient,
+    message.amount,
+    message.nonce,
+  ])
+
+  return keccak256(encodedMessageParams)
 }
 
-const messageParameters = [
-  { type: "uint256", name: "originChainId" },
-  { type: "uint256", name: "destinationChainId" },
-  { type: "address", name: "token" },
-  { type: "address", name: "sender" },
-  { type: "address", name: "recipient" },
-  { type: "uint256", name: "amount" },
-  { type: "uint256", name: "nonce" },
-] as const
+

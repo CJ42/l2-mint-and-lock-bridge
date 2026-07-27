@@ -37,6 +37,7 @@ contract WrappedToken is ERC20, ERC20Burnable {
         uint256 /* amount */
     )
         public
+        pure
         override
     {
         revert Errors.BurningTokensDisallowedForUsers();

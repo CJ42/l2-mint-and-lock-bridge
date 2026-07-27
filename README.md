@@ -1,9 +1,12 @@
 # L2 Mint-and-Lock Bridge
 
-A bidirectional bridge for Circle testnet USDC between Base Sepolia and Arbitrum Sepolia. Base USDC is locked as collateral and an equivalent 6-decimal `wUSDC` is minted on Arbitrum; returning burns `wUSDC` before releasing the original USDC.
+A bidirectional bridge for Circle testnet USDC between Base Sepolia and Arbitrum Sepolia.
 
+![Bridge UI cover image](./screenshot.png)
+
+<!--
 ```
-                                         
+
             ..                                       ..
             []                                       []
           .:[]:_                                   ,:[]:.
@@ -17,144 +20,137 @@ _:_:_:_:_:_:[]:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:[]:_:_:_:_:_:_
             []       =========================       []
             []       | L2 ERC20 Token Bridge |       []
             []       =========================       []
+``` -->
+
+## Architecture Overview
+
+![Bridge flow and architecture](./architecture.png)
+
+## Chains, tokens and contracts
+
+### 🟦 Base Sepolia (chain ID: 84532)
+
+| Contract                | Address                                                                                                                         |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Circle testnet USDC     | [`0x036CbD53842c5426634e7929541eC2318f3dCF7e`](https://sepolia.basescan.org/address/0x036CbD53842c5426634e7929541eC2318f3dCF7e) |
+| `CollateralTokenBridge` | [`0x9C5DB618c29e99e71BC6aD10c4Cc3c5544a31921`](https://sepolia.basescan.org/address/0x9C5DB618c29e99e71BC6aD10c4Cc3c5544a31921) |
+
+### ⬜️ Arbitrum Sepolia (chain ID: 421614)
+
+| Contract               | Address                                                                                                                        |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `SyntheticTokenBridge` | [`0x3096e98a82dd7a1adfaa71d0def8f7cfd3d43ea0`](https://sepolia.arbiscan.io/address/0x3096e98a82dd7a1adfaa71d0def8f7cfd3d43ea0) |
+| Wrapped USDC (`wUSDC`) | [`0x4fd6979AfE5C83653ef1d4ffd0581A491a53DEF0`](https://sepolia.arbiscan.io/address/0x4fd6979AfE5C83653ef1d4ffd0581A491a53DEF0) |
+
+This L2 Bridge showcases bridging testnet USDC, a real asset and a real ERC20 approval + `transferFrom`.
+
+Base Sepolia USDC is locked as collateral and an equivalent 6-decimal `wUSDC` is minted on Arbitrum Sepolia.
+Bridging back involves burning `wUSDC` on Arbitrum Sepolia before unlocking the original USDC on Base Sepolia.
+
+## How it works? Flow
+
+The core invariant of the bridge is that USDC locked in the `CollateralTokenBridge` contract on Base Sepolia **MUST always be greater than or equal to the total supply of `wUSDC`** on Arbitrum Sepolia. (we factor the case if a user transfer arbitrarily with `CollateralTokenBridge` contract address as `recipient`).
+
+### Bridging: Base ➡ Arbitrum
+
+1. The user give as allowance to the `CollateralTokenBridge` the amount it wants to bridge. This is done by calling `approve(...)` on the USDC token contract.
+2. The user calls `bridgeTx(...)` on the `CollateralTokenBridge` contract. Under the hood, the bridge calls `transferFrom` to take the user's tokens and lock them in the smart contract.
+3. When `bridgeTx(...)` is called, it emits a `BridgeTxInitiated` event that the relayer listens to on the source chain (`Base`).
+4. The relayer waits five confirmations, validates the event's message ID, and calls `finalizeBridgeTx(...)` on the `SyntheticTokenBridge` contract on the destination chain.
+5. `SyntheticTokenBridge` marks the message processed and mints the same amount of `wUSDC`.
+
+### Bridging back: Base ⬅ Arbitrum
+
+The reverse path performs the same steps as above, with the following differences:
+
+- at step 2, the user calls `bridgeTx(...)` on the `SyntheticTokenBridge` contract, which burns the `wUSDC` via `burnFrom(...)`.
+- at step 4, the relayer completes the return path by calling `finalizeBridgeTx(...)` on the `CollateralTokenBridge`.
+- at step 5, the `CollateralTokenBridge` marks the message processed and unlock the same amount of USDC.
+
+### Bridge message ID format
+
+Every message ID of a bridge transaction is the keccak256 hash of the following properties.
+
+```javascript
+keccak256(
+  abi.encode(
+    originChainId,
+    destinationChainId,
+    tokenAddress,
+    sender,
+    recipient,
+    amount,
+    senderNonce,
+  ),
+);
 ```
 
-```text
-Base Sepolia                                      Arbitrum Sepolia
-user → CollateralTokenBridge → BridgeInitiated
-                                  │
-                         trusted relayer
-                                  │
-                                  └→ SyntheticTokenBridge → wUSDC
+## Security, Trust model and tradeoffs
 
-user ← CollateralTokenBridge ← trusted relayer ← BridgeInitiated ← burn wUSDC
-```
+### Smart Contracts
 
-## Chains and token
+- Chain ID in the message ID prevents cross-chain replay.
+- nonces enable to prevent replay a bridge message twice.
+- destination-side `processed` mapping prevents duplicate finalization (if multiple relayers are running and the same bridge message ID is picked by two different relayers)
 
-| Network | Chain ID | Asset | Contract |
-| --- | ---: | --- | --- |
-| Base Sepolia | 84532 | Circle testnet USDC | [`0x036C…CF7e`](https://sepolia.basescan.org/address/0x036CbD53842c5426634e7929541eC2318f3dCF7e) |
-| Arbitrum Sepolia | 421614 | Wrapped USDC (`wUSDC`) | Set after deployment in `addresses.json` |
+The bridge contracts inherit `Ownable2Step` and `Pausable`, which allows a circuit breaker if the bridge or relayer is compromised.
 
-These public L2 testnets have dependable RPCs and faucets. Using Circle's deployed USDC exercises a real ERC-20 approval and `transferFrom` path instead of hiding integration risk behind a mock.
+The bridge contract use the `SafeERC20` library to ensure the bridge always integrate ERC20 compliant tokens that return `true` when the `transferFrom` function is called, and reject non-standard tokens. The `SafeERC20` library allows `transferFrom` calls that do not return any data (like USDT), but if data is returned, it must be a `true` boolean.
 
-## How it works
+### Relayer
 
-Base to Arbitrum:
+Decided to use the trusted relayer model for simplicity. The bridge intentionally trusts one relayer EOA via the `onlyRelayer` modifier in the smart contract.
 
-1. The user approves USDC and calls `lock`.
-2. `CollateralTokenBridge` transfers USDC into collateral and emits `BridgeInitiated`.
-3. The relayer waits five confirmations, validates the event's message ID, and calls `mint`.
-4. `SyntheticTokenBridge` marks the message processed and mints the same amount of `wUSDC`.
-
-The reverse path approves and burns `wUSDC`, then the relayer calls `unlock` on Base.
-
-Every message hashes the origin chain ID, destination chain ID, canonical token, sender, recipient, amount, and per-sender nonce with `abi.encode`. Chain IDs prevent cross-chain replay, nonces distinguish repeated transfers, and a destination-side `processed` mapping prevents duplicate finalization.
-
-> Outside in-flight messages, USDC locked in `CollateralTokenBridge` is greater than or equal to the total supply of `wUSDC`. Equality holds when no messages are in flight.
-
-## Trust model and tradeoffs
-
-The bridge intentionally trusts one relayer EOA. `onlyRelayer` authorization is simple and explicit, but compromise or censorship of that key can mint invalid claims or stop delivery. A production bridge would verify EIP-712 message attestations from a rotatable n-of-m signer set.
-
-The relayer only reads blocks five confirmations behind the origin head, which protects against shallow testnet reorgs. Production would use finalized L1 batch status. Per-sender nonces avoid global ordering, while `Ownable2Step` and `Pausable` provide a legible circuit breaker.
-
-The UI indexes recent logs directly. This removes backend infrastructure for the demo, but repeated 50,000-block scans do not scale.
+The relayer only reads blocks five confirmations behind the origin head, which protects against shallow testnet reorgs. Production should use finalized L1 batch status, or more confirmations.
 
 ## What was cut and why
 
-| Cut | Why | Production direction |
-| --- | --- | --- |
-| Relayer signature verification | Time; the single-relayer trust model is explicit | EIP-712, n-of-m attestations, key rotation |
-| Fees / destination gas payment | It changes contracts, relayer, and UI together | Enforced fee floor with off-chain quotes and relayer withdrawals |
-| Failed-finalization recovery | This is the most security-sensitive bridge path | Attested-failure refunds or a carefully designed timeout reclaim |
-| Rate limits and caps | Low value on a public testnet demo | Per-message and per-block limits |
-| Rebalancing / third chain | Requires a liquidity model | Asset gateway registry and routers |
-| Dedicated indexer | Zero-infrastructure UI is sufficient here | Relayer ledger API or production indexer |
-| Real-USDC fork tests | Unit tests and live smoke testing cover the initial path | Base Sepolia fork test against deployed USDC bytecode |
+| Cut                                       | Why                                                                                                                                                                                                                | Production direction                                                                                                                                                                                  |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ✅ Trusted Relayer                        | Time; the single-relayer trust model is explicit. I was considering using a zk-proof that could be generated by anyone, but would require adding a Circuit in Solidity on the bridge contract to verify the SNARK. | Relayer private key should run on a TEE + some economic mechanisms with slashing should be put in place.                                                                                              |
+| ✅ Real-USDC Mainnet fork tests           | Unit tests and live smoke testing cover the initial path                                                                                                                                                           | Base Sepolia fork test against deployed USDC bytecode                                                                                                                                                 |
+| ✅ Fees / destination gas payment         | Requires more complex smart contracts implementation and gas oracles                                                                                                                                               | Enforce user to pay for the destination gas with off-chain quotes via oracles and relayer withdrawals so they can reimburse the gas paid for relaying the bridge transaction on the destination chain |
+| ✅ Multiple destination chain for a token | Requires a rebalancer and increase complexity of managing                                                                                                                                                          | Asset gateway registry and routers. Allowing to rebalance                                                                                                                                             |
+| ✅ L2 Bridge Finalization                 | Time                                                                                                                                                                                                               |                                                                                                                                                                                                       |
+| Failed-finalization recovery              | This is the most security-sensitive bridge path                                                                                                                                                                    | Attested-failure refunds or a carefully designed timeout reclaim                                                                                                                                      |
+| Rate limits and caps                      | Low value on a public testnet demo                                                                                                                                                                                 | Per-message and per-block limits                                                                                                                                                                      |
 
-## Running locally
+## What I would improve with more time?
 
-Requirements: [Bun](https://bun.sh) and [Foundry](https://book.getfoundry.sh/).
+### UI
 
-1. Populate the address of the deployer and the configured relayer in the `contract/.env` file:
+- I would improve the UI with a better transaction handling. For instance for stuck transactions, either canceling them (with 0 value transfer to self), or re-submitting a transaction with `maxFeePerGas` and `maxPriorityFeePerGas`.
+- I would improve input validations and test more if I enter random inputs.
 
-```bash
-cp contracts/.env.example contract/.env
-```
+### Relayer
 
-```
-DEPLOYER_PRIVATE_KEY=
-RELAYER_ADDRESS=
-```
+- I would have ran the relayer in a TEE like Chainlink CRE for better security. This way, the private key of the relayer would be stored in a safer docker container.
+- I would have refactored the codebase to use a live websocket connection to listen and monitor for events, over using http and regularly polling the logs for a range of blocks via viem `viemPubliClient.getLogs(...)`.
+- **(more future advanced improvement)** I would have changed completely the economic architecture behind the relayers operating on the bridge. For instance, make any relayer that register stake some tokens, implementing slashing mechanisms if a relayer behaves badly. I would have leveraged something like Eigenlayer AVS to implement such staking and slashing mechanisms.
 
-```bash
-source contracts/.env
-```
+### Smart Contracts
 
-2. Deploy the bridge contract addresses on Arbitrum first, then Base:
+- I would have made the contracts are proxies, so that deploying new contracts for new bridge routes is cheaper (just deploying the bridge implementation contracts once, similar to Hyperlane).
+- Currently, the relayer pays entirely for the gas on the destination chain. I would have implemented a feature similar to Hyperlane **Interchain Gas Payment**, where the user sends native tokens alongside the bridge transaction, that the relayer can then retrieve to reimburse the gas cost it had to pay for sending the final bridge transaction on the destination chain.
+- I would have also considered implementing a mechanism where the user can send an additional _"tip for the relayer"_ (a small amount of native tokens) so that the relayer is incentivized to pick the bridge transaction first.
+- **(more future advanced improvement)** I would have not hardcoded the `DESTINATION_CHAIN_ID` in the bridge smart contracts. Instead, I would have allowed to pass the destination chain ID as a parameter to `bridgeTx(...)`. The bridge admin would be allowed to add new destination chain to bridge to through a function `addDestinationChain(...)`
 
-```bash
-cd contracts
-forge script script/DeployArb.s.sol:DeployArb --rpc-url "$ARBITRUM_SEPOLIA_RPC_URL" --broadcast
-forge script script/DeployBase.s.sol:DeployBase --rpc-url "$BASE_SEPOLIA_RPC_URL" --broadcast
-```
+The next priorities:
 
-3. Populate the `.env` file of the relayer with the newly deployed smart contract addresses, deployed blocks, and the relayer EOA private key
-
-> **Note:** The relayer EOA must have test ETH on both chains. 
-
-```bash
-cp relayer/.env.example relayer/.env
-```
-
-```
-BASE_BRIDGE_ADDRESS=0x330802C5F681f1cf46FE32bb3999F14E47DAbfC5
-ARBITRUM_BRIDGE_ADDRESS=0x796b1fdcDE61280EF51B94f5a68132941856ec0c
-BASE_DEPLOY_BLOCK=44536936
-ARBITRUM_DEPLOY_BLOCK=1000000
-```
-
-```bash
-source relayer/.env
-```
-
-4. finally populate the `ui/.env.local` file
-
-```
-NEXT_TELEMETRY_DISABLED=1
-
-NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=
-
-NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL=https://sepolia.base.org
-NEXT_PUBLIC_ARBITRUM_SEPOLIA_RPC_URL=https://sepolia-rollup.arbitrum.io/rpc
-
-NEXT_PUBLIC_BASE_BRIDGE_ADDRESS=
-NEXT_PUBLIC_BASE_USDC_ADDRESS=
-NEXT_PUBLIC_ARBITRUM_BRIDGE_ADDRESS=
-NEXT_PUBLIC_ARBITRUM_WUSDC_ADDRESS=
-```
-
-5. Populate both bridge addresses, the wrapped token address, and deployment blocks in `addresses.json`.
-
-6. Build the projects.
-
-```bash
-bun install
-bun run build
-```
-
-To test bridging USDC from Base, Base USDC is available from [Circle's faucet](https://faucet.circle.com).
-
-## Deployment addresses
-
-Deployment-specific values and starting blocks live in `addresses.json`. Blank bridge values mean the project has not yet been deployed; the UI remains read-only and the relayer rejects startup until they are populated.
-
-## Further improvements
-
-The next priorities are signature verification, gas fees, safe stuck-fund recovery, rate limits, finalized L1 confirmation, a durable indexed message API, and a gateway registry for additional assets and chains.
+- signature verification
+- gas fees
+- safe stuck-fund recovery
+- rate limits
+- finalized L1 confirmation
+- a durable indexed message API
+- and a gateway registry for additional assets and chains
 
 ## AI usage
+
+I have leveraged AI in the following ways:
+
+- **Custom GitHub Copilot AI review instructions**: Created a file [`.github/copilot_instructions.md`](./.github/copilot-instructions.md) with the instructions of the assignement + some additional points I consider important for this task (_e.g: show how the transaction state evolves over time, simulate before sending transactions, smart contract security patterns like CEI_). This way on each PR I made t the GitHub repository, I would request an AI review from GitHub Copilot and ensure Copilot would review code changes and focus on the specific important points I had listed.
+- **Cursor Plan + Build mode with formal specs:** I created an initial [`SPECIFICATIONS.md`](./SPECIFICATIONS.md) file with additional notes and some additions from AI. I then gave this document to Claude Fable 5 in Cursor, used the Plan Mode first, and then the build mode second to bootstrap and build the initial implementation.
+- **Claude Code + GSD Prompt engineering tool:** I used Claude Code + a tool called `gsd` to iterate and improve the UI tx flow (created the stepper this way, and listen for transaction state and receipts). GSD Core is a context-engineering and spec-driven development framework that drives AI coding agents (like Claude Code or Codex) through disciplined phase loops.
 
 Architecture and tradeoffs were decided up front in `SPECIFICATIONS.md`. AI implemented that written design, while the security-sensitive message identity, nonce, replay, and trust assumptions remained fixed by the specification.

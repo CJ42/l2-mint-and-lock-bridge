@@ -33,7 +33,7 @@ key-files:
 key-decisions:
   - "wagmi.config.ts sets exclude: [] instead of omitting exclude, because @wagmi/cli's foundryDefaultExcludes (active whenever exclude is unset) literally contains 'IERC20.sol/**' and silently cancelled the plan's own include entry for it — see Deviations"
   - "bridgeErrorAbi is error fragments only, deduped by 4-byte selector (toFunctionSelector + formatAbiItem), first occurrence wins, source order [collateral, synthetic, wrappedToken, ierc20]"
-  - "use-bridge-messages.ts resolves BridgeInitiated/BridgeFinalized from collateralTokenBridgeAbi via getAbiItem (both bridge contracts declare byte-identical event fragments)"
+  - "use-bridge-messages.ts resolves BridgeTxInitiated/BridgeFinalized from collateralTokenBridgeAbi via getAbiItem (both bridge contracts declare byte-identical event fragments)"
   - "bridge-card.tsx bridge-call ABI selection expressed as a bridgeAbiByAction lookup keyed on the existing direction.action field, not a duplicated ternary"
 
 patterns-established:
@@ -118,7 +118,7 @@ status: complete
 - `bridgeErrorAbi` built at module scope in `ui/src/lib/decode-bridge-error.ts`: all 21 distinct error fragments across the four generated ABIs, deduped by 4-byte selector, source order `[collateral, synthetic, wrappedToken, ierc20]` as the deterministic tie-break
 - `decodeBridgeError` implements the full ten-member `DecodedBridgeErrorKind` contract with two working branches (`bridge-custom-error`, `unknown`); proven end-to-end by `bun test` — a `BridgeMessageAlreadyProcessed` revert encoded via `encodeErrorResult` against the generated ABI decodes back to a sentence containing the real messageId, and an unrecognised selector / `undefined` / plain `Error` / non-Error value all resolve to `kind: 'unknown'` without ever throwing
 - Every hand-written ABI source retired: `ui/src/lib/abis.ts` deleted (after confirming its error set — zero fragments — was already known-incomplete), and the two untracked root-level ABI JSON dumps (`collateral-abi.json`, `synthetic-abi.json`) deleted after a direct comparison confirmed their error sets exactly match the equivalent generated ABIs' error fragments
-- Both former call sites repointed to `@/lib/generated`: `use-bridge-messages.ts` resolves `BridgeInitiated`/`BridgeFinalized` by name via `getAbiItem` instead of `bridgeAbi[0]`/`bridgeAbi[1]`; `bridge-card.tsx` swaps `erc20Abi` for the generated `ierc20Abi` at all four ERC20 sites and uses a `bridgeAbiByAction` lookup keyed on `direction.action` at both bridge-call sites — import-and-name-swap only, no JSX/state changes
+- Both former call sites repointed to `@/lib/generated`: `use-bridge-messages.ts` resolves `BridgeTxInitiated`/`BridgeFinalized` by name via `getAbiItem` instead of `bridgeAbi[0]`/`bridgeAbi[1]`; `bridge-card.tsx` swaps `erc20Abi` for the generated `ierc20Abi` at all four ERC20 sites and uses a `bridgeAbiByAction` lookup keyed on `direction.action` at both bridge-call sites — import-and-name-swap only, no JSX/state changes
 - `ui` gained a working `bun test` entry point where it previously had none
 
 ## Task Commits
@@ -137,7 +137,7 @@ _Note: an additional out-of-scope commit, `a5874e5` (`fix(contracts): match OZ o
 - `ui/src/lib/decode-bridge-error.ts` - `bridgeErrorAbi` (21 deduped error fragments) and `decodeBridgeError`; ten-member `DecodedBridgeErrorKind` union, `DecodedBridgeError`/`DecodeBridgeErrorInput` interfaces; ordered decoder chain with `bridge-custom-error` and terminal `unknown` branches implemented
 - `ui/src/lib/decode-bridge-error.test.ts` - 6 tests / 31 assertions proving the 21-error-name enumeration and all five Task 1 behaviours
 - `ui/package.json` - added `"generate": "wagmi generate"`, `"test": "bun test"` scripts; added `@types/bun` devDependency
-- `ui/src/hooks/use-bridge-messages.ts` - `bridgeInitiatedEvent`/`bridgeFinalizedEvent` resolved by name via `getAbiItem` from `collateralTokenBridgeAbi`, replacing `bridgeAbi[0]`/`bridgeAbi[1]`
+- `ui/src/hooks/use-bridge-messages.ts` - `bridgeTxInitiatedEvent`/`bridgeFinalizedEvent` resolved by name via `getAbiItem` from `collateralTokenBridgeAbi`, replacing `bridgeAbi[0]`/`bridgeAbi[1]`
 - `ui/src/components/bridge-card.tsx` - `erc20Abi` → `ierc20Abi` (4 sites); `bridgeAbi` → `bridgeAbiByAction[direction.action]` (2 sites)
 - `ui/src/lib/abis.ts` - deleted
 - `collateral-abi.json`, `synthetic-abi.json` (repo root, untracked) - deleted
@@ -146,7 +146,7 @@ _Note: an additional out-of-scope commit, `a5874e5` (`fix(contracts): match OZ o
 ## Decisions Made
 
 - **`bridgeErrorAbi` dedup mechanism:** filter to `type === 'error'`, dedupe by 4-byte selector computed via `toFunctionSelector(formatAbiItem(item))`, first occurrence wins in source order `[collateral, synthetic, wrappedToken, ierc20]`. Matches the plan's `planner_flagged_decisions` item 3 exactly.
-- **Event resolution by name:** `use-bridge-messages.ts` now resolves `BridgeInitiated`/`BridgeFinalized` from `collateralTokenBridgeAbi` specifically (both bridge contracts declare byte-identical event fragments, so either resolves the same item) rather than re-deriving per direction.
+- **Event resolution by name:** `use-bridge-messages.ts` now resolves `BridgeTxInitiated`/`BridgeFinalized` from `collateralTokenBridgeAbi` specifically (both bridge contracts declare byte-identical event fragments, so either resolves the same item) rather than re-deriving per direction.
 - **`bridgeAbiByAction` lookup:** a small object keyed on `direction.action` (`'lock' | 'burn'`) rather than repeating the ternary at both `bridge-card.tsx` call sites, per the plan's explicit instruction.
 
 ## Deviations from Plan

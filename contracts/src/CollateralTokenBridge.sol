@@ -44,8 +44,8 @@ contract CollateralTokenBridge is BridgeBase, ReentrancyGuardTransient {
         DESTINATION_CHAIN_ID = destinationChainId_;
     }
 
-    /// @notice Locks canonical TOKEN and emits a Base-to-Arbitrum bridge message.
-    function lock(address recipient, uint256 amount) external whenNotPaused nonReentrant {
+    /// @notice Locks canonical TOKEN and emits a bridge message.
+    function bridgeTx(address recipient, uint256 amount) external whenNotPaused nonReentrant {
         _validateInputs(recipient, amount);
 
         uint256 nonce = nonces[msg.sender]++;
@@ -60,18 +60,25 @@ contract CollateralTokenBridge is BridgeBase, ReentrancyGuardTransient {
         });
         bytes32 messageId = message.computeBridgeMessageId();
 
-        // events are a kind of state changing operations (not on the smart contract but on the chain as they write a log)
-        // emit before external calls to respect strictly CEI
-        emit BridgeInitiated(messageId, msg.sender, recipient, amount, nonce, block.chainid, DESTINATION_CHAIN_ID);
+        // events are state changing operations and must be emitted before any external calls
+        emit BridgeTxInitiated({
+            messageId: messageId,
+            sender: msg.sender,
+            recipient: recipient,
+            amount: amount,
+            nonce: nonce,
+            originChainId: block.chainid,
+            destinationChainId: DESTINATION_CHAIN_ID
+        });
 
         TOKEN.safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    /// @notice Unlocks canonical TOKEN after a destination-chain burn.
-    function unlock(Types.BridgeMessage calldata message) external onlyRelayer whenNotPaused nonReentrant {
+    /// @notice Finalizes a bridge transaction by unlocking canonical TOKEN.
+    function finalizeBridgeTx(Types.BridgeMessage calldata message) external onlyRelayer whenNotPaused nonReentrant {
         bytes32 messageId = _consumeMessage(message);
 
-        emit BridgeFinalized(messageId, message.recipient, message.amount);
+        emit BridgeTxFinalized(messageId, message.recipient, message.amount);
         TOKEN.safeTransfer(message.recipient, message.amount);
     }
 }

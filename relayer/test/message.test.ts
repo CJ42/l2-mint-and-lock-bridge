@@ -2,16 +2,16 @@ import { describe, expect, test } from "bun:test"
 import type { Address, Hex } from "viem"
 import { canonicalUsdcAddress } from "../src/config"
 import {
-  hashBridgeMessage,
+  computeBridgeMessageId,
   reconstructMessage,
-  type BridgeInitiatedLog,
+  type BridgeTxInitiatedLog,
   type BridgeMessage,
 } from "../src/message"
 
 describe("bridge message integrity", () => {
   test("reconstructs a message and accepts its canonical hash", () => {
     const message = createMessage()
-    const messageId = hashBridgeMessage({ message })
+    const messageId = computeBridgeMessageId({ message })
     const result = reconstructMessage({
       log: createLog({ message, messageId }),
       canonicalToken: canonicalUsdcAddress,
@@ -36,13 +36,13 @@ describe("bridge message integrity", () => {
     const message = createMessage()
 
     expect(
-      hashBridgeMessage({
+      computeBridgeMessageId({
         message: { ...message, destinationChainId: message.destinationChainId + 1n },
       }),
-    ).not.toBe(hashBridgeMessage({ message }))
+    ).not.toBe(computeBridgeMessageId({ message }))
     expect(
-      hashBridgeMessage({ message: { ...message, nonce: message.nonce + 1n } }),
-    ).not.toBe(hashBridgeMessage({ message }))
+      computeBridgeMessageId({ message: { ...message, nonce: message.nonce + 1n } }),
+    ).not.toBe(computeBridgeMessageId({ message }))
   })
 })
 
@@ -64,7 +64,7 @@ function createLog({
 }: {
   message: BridgeMessage
   messageId: Hex
-}): BridgeInitiatedLog {
+}): BridgeTxInitiatedLog {
   return {
     address: "0x3333333333333333333333333333333333333333" as Address,
     args: {

@@ -120,7 +120,7 @@ async function runFlow() {
 ```typescript
 const initiatedLogs = parseEventLogs({
   abi: bridgeAbi, // Phase 1's generated ABI, not the deleted ui/src/lib/abis.ts
-  eventName: 'BridgeInitiated',
+  eventName: 'BridgeTxInitiated',
   logs: bridgeReceipt.logs,
 })
 const messageId = initiatedLogs[0]?.args.messageId

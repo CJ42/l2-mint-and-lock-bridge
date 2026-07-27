@@ -30,16 +30,11 @@ export default function HomePage() {
       <div className={styles.top}>
         <div className={styles.hero}>
           <h1 className={styles.title}>
-            L2 Bridge<span aria-hidden="true">.</span>
+            L2 USDC Bridge<span aria-hidden="true">.</span>
           </h1>
           <p className={styles.subtitle}>
-            Move tokens between Arbitrum and Base Sepolia
+            Move USDC between Base and Arbitrum Sepolia
           </p>
-          <ul className={styles.facts}>
-            {heroFacts.map((fact) => (
-              <li key={fact}>{fact}</li>
-            ))}
-          </ul>
           <BridgeStepper flowState={flow.flowState} />
         </div>
         <BridgeCard flow={flow} />
@@ -53,9 +48,3 @@ export default function HomePage() {
     </main>
   )
 }
-
-const heroFacts = [
-  'Lock USDC on Base Sepolia to mint wUSDC on Arbitrum Sepolia',
-  'Burn wUSDC on Arbitrum Sepolia to unlock the original collateral',
-  '6-decimal amounts · 5 confirmation relay target · testnets only',
-]

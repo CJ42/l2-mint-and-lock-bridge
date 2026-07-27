@@ -65,9 +65,6 @@ abstract contract BridgeBase is IBridge, Ownable2Step, Pausable {
         messageId = message.computeBridgeMessageId();
         require(!processed[messageId], Errors.BridgeMessageAlreadyProcessed(messageId));
 
-        // TODO(signature-verification): Production finalization would verify an EIP-712
-        // signature over id against a rotatable relayer key set or n-of-m attestation.
-        // The current trust model authenticates only msg.sender through onlyRelayer.
         processed[messageId] = true;
     }
 }

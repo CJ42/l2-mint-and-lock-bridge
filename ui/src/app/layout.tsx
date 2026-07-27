@@ -15,7 +15,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: 'L2 Bridge',
-  description: 'Move tokens between Arbitrum and Base Sepolia',
+  description: 'Move USDC between Base and Arbitrum Sepolia',
 }
 
 export default function RootLayout(props: { children: ReactNode }) {

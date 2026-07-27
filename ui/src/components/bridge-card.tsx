@@ -1,23 +1,23 @@
-'use client'
+"use client";
 
-import Image from 'next/image'
-import type { ReactNode } from 'react'
+import Image from "next/image";
+import type { ReactNode } from "react";
 
-import type { UseBridgeFlowResult } from '@/hooks/use-bridge-flow'
+import type { UseBridgeFlowResult } from "@/hooks/use-bridge-flow";
 import {
   chains,
   directions,
   formatTokenAmount,
   type ChainMeta,
-} from '@/lib/bridge'
-import { isBridgeDeployed } from '@/lib/config'
-import type { BridgeFlowState, BridgeStepId } from '@/lib/derive-flow-state'
+} from "@/lib/bridge";
+import { isBridgeDeployed } from "@/lib/config";
+import type { BridgeFlowState, BridgeStepId } from "@/lib/derive-flow-state";
 
-import { Spinner } from './spinner'
-import styles from './bridge-card.module.css'
+import { Spinner } from "./spinner";
+import styles from "./bridge-card.module.css";
 
 interface BridgeCardProps {
-  flow: UseBridgeFlowResult
+  flow: UseBridgeFlowResult;
 }
 
 export function BridgeCard({ flow }: BridgeCardProps) {
@@ -25,6 +25,7 @@ export function BridgeCard({ flow }: BridgeCardProps) {
     flowState,
     directionKey,
     amountInput,
+    amountError,
     recipientInput,
     recipientError,
     originBalance,
@@ -36,21 +37,25 @@ export function BridgeCard({ flow }: BridgeCardProps) {
     setSelfRecipient,
     flipDirection,
     submit,
-  } = flow
+  } = flow;
 
-  const isBaseOrigin = directionKey === 'baseToArbitrum'
-  const direction = directions[directionKey]
-  const originChain = isBaseOrigin ? chains.base : chains.arbitrum
-  const destinationChain = isBaseOrigin ? chains.arbitrum : chains.base
+  const isBaseOrigin = directionKey === "baseToArbitrum";
+  const direction = directions[directionKey];
+  const originChain = isBaseOrigin ? chains.base : chains.arbitrum;
+  const destinationChain = isBaseOrigin ? chains.arbitrum : chains.base;
   const isConnected =
-    flowState.phase !== 'blocked' || flowState.reason !== 'disconnected'
-  const action = resolveAction({ flowState, explorerUrl })
+    flowState.phase !== "blocked" || flowState.reason !== "disconnected";
+  const action = resolveAction({ flowState, explorerUrl, amountError });
 
   return (
     <section className={styles.card} aria-labelledby="bridge-heading">
       <div className={styles.cardHeading}>
-        <h2 id="bridge-heading">Transfer</h2>
         <span className={styles.tag}>Testnet</span>
+      </div>
+      <div className={styles.cardHeading}>
+        <a href="https://faucet.circle.com/" target="_blank">
+          <span className={styles.tag}>USDC Faucet</span>
+        </a>
       </div>
 
       {!isBridgeDeployed && (
@@ -90,20 +95,33 @@ export function BridgeCard({ flow }: BridgeCardProps) {
             Max
           </button>
         </div>
-        <div className={styles.inputShell}>
+        <div
+          className={
+            amountError
+              ? `${styles.inputShell} ${styles.inputShellInvalid}`
+              : styles.inputShell
+          }
+        >
           <input
             id="amount"
             className={styles.amountInput}
             inputMode="decimal"
             placeholder="0.00"
+            aria-invalid={Boolean(amountError)}
+            aria-describedby={amountError ? "amount-error" : undefined}
             value={amountInput}
             onChange={(event) => setAmountInput(event.target.value)}
           />
           <span className={styles.token}>
-            <Image src={originChain.logo} alt="" width={16} height={16} />
+            <Image src="/usdc-logo.png" alt="" width={16} height={16} />
             {direction.tokenSymbol}
           </span>
         </div>
+        {amountError && (
+          <p id="amount-error" className={styles.error}>
+            {amountError}
+          </p>
+        )}
       </div>
 
       <div className={styles.field}>
@@ -125,7 +143,7 @@ export function BridgeCard({ flow }: BridgeCardProps) {
               autoComplete="off"
               spellCheck={false}
               aria-invalid={Boolean(recipientError)}
-              aria-describedby={recipientError ? 'recipient-error' : undefined}
+              aria-describedby={recipientError ? "recipient-error" : undefined}
               value={recipientInput}
               onChange={(event) => setRecipientInput(event.target.value)}
             />
@@ -147,7 +165,7 @@ export function BridgeCard({ flow }: BridgeCardProps) {
         )}
       </div>
 
-      {flowState.phase === 'failed' && (
+      {flowState.phase === "failed" && (
         <div className={styles.banner} role="alert">
           <strong>
             {failureHeadline(flowState.failedStep, flowState.failure.kind)}
@@ -170,7 +188,7 @@ export function BridgeCard({ flow }: BridgeCardProps) {
         <button
           type="button"
           className={
-            flowState.phase === 'done'
+            flowState.phase === "done"
               ? `${styles.action} ${styles.actionSuccess}`
               : styles.action
           }
@@ -182,7 +200,7 @@ export function BridgeCard({ flow }: BridgeCardProps) {
         </button>
       )}
     </section>
-  )
+  );
 }
 
 function ChainPanel({
@@ -192,11 +210,11 @@ function ChainPanel({
   isConnected,
   isDestination = false,
 }: {
-  label: string
-  chain: ChainMeta
-  balance?: bigint
-  isConnected: boolean
-  isDestination?: boolean
+  label: string;
+  chain: ChainMeta;
+  balance?: bigint;
+  isConnected: boolean;
+  isDestination?: boolean;
 }) {
   return (
     <div
@@ -219,127 +237,133 @@ function ChainPanel({
       </div>
       {isConnected && (
         <span className={styles.chainBalance}>
-          Balance on {chain.name} ={' '}
-          {balance === undefined
-            ? '…'
-            : `${formatTokenAmount(balance)} ${chain.tokenSymbol}`}
+          Balance on {chain.name}
+          <p>
+            {" "}
+            ={" "}
+            {balance === undefined
+              ? "…"
+              : `${formatTokenAmount(balance)} ${chain.tokenSymbol}`}
+          </p>
         </span>
       )}
     </div>
-  )
+  );
 }
 
 function resolveAction({
   flowState,
   explorerUrl,
+  amountError,
 }: {
-  flowState: BridgeFlowState
-  explorerUrl?: string
+  flowState: BridgeFlowState;
+  explorerUrl?: string;
+  amountError: string | null;
 }): {
-  label: string
-  isDisabled: boolean
-  showSpinner: boolean
-  icon?: ReactNode
-  href?: string
+  label: string;
+  isDisabled: boolean;
+  showSpinner: boolean;
+  icon?: ReactNode;
+  href?: string;
 } {
-  if (flowState.phase === 'blocked') {
+  if (flowState.phase === "blocked") {
     switch (flowState.reason) {
-      case 'disconnected':
+      case "disconnected":
         return {
-          label: 'Connect wallet',
+          label: "Connect wallet",
           isDisabled: false,
           showSpinner: false,
           icon: <WalletIcon />,
-        }
-      case 'undeployed':
+        };
+      case "undeployed":
         return {
-          label: 'Bridge undeployed',
+          label: "Bridge undeployed",
           isDisabled: true,
           showSpinner: false,
-        }
-      case 'wrong-chain':
+        };
+      case "wrong-chain":
         return {
-          label: 'Switch network',
+          label: "Switch network",
           isDisabled: false,
           showSpinner: false,
           icon: <RetryIcon />,
-        }
-      case 'switching-chain':
+        };
+      case "switching-chain":
         return {
-          label: 'Switching network…',
+          label: "Switching network…",
           isDisabled: true,
           showSpinner: true,
-        }
-      case 'invalid-amount':
+        };
+      case "invalid-amount":
         return {
-          label: 'Enter an amount',
+          label: amountError ? "Insufficient balance" : "Enter an amount",
           isDisabled: true,
           showSpinner: false,
-        }
-      case 'invalid-recipient':
+        };
+      case "invalid-recipient":
         return {
-          label: 'Enter a recipient',
+          label: "Enter a recipient",
           isDisabled: true,
           showSpinner: false,
-        }
+        };
     }
   }
 
-  if (flowState.phase === 'ready')
+  if (flowState.phase === "ready")
     return {
-      label: 'Bridge',
+      label: "Bridge",
       isDisabled: false,
       showSpinner: false,
       icon: <TransferIcon />,
-    }
+    };
 
-  if (flowState.phase === 'approving') {
-    const approve = flowState.steps[0]
-    if (approve.status === 'pending')
+  if (flowState.phase === "approving") {
+    const approve = flowState.steps[0];
+    if (approve.status === "pending")
       return {
-        label: 'Confirm approval in wallet',
+        label: "Confirm approval in wallet",
         isDisabled: true,
         showSpinner: true,
-      }
-    return { label: 'Approving…', isDisabled: true, showSpinner: true }
+      };
+    return { label: "Approving…", isDisabled: true, showSpinner: true };
   }
 
-  if (flowState.phase === 'submitting') {
-    const submitStep = flowState.steps[1]
-    if (submitStep.status === 'pending')
+  if (flowState.phase === "submitting") {
+    const submitStep = flowState.steps[1];
+    if (submitStep.status === "pending")
       return {
-        label: 'Confirm in wallet',
+        label: "Confirm in wallet",
         isDisabled: true,
         showSpinner: true,
-      }
-    return { label: 'Submitting…', isDisabled: true, showSpinner: true }
+      };
+    return { label: "Submitting…", isDisabled: true, showSpinner: true };
   }
 
-  if (flowState.phase === 'relaying')
-    return { label: 'Relaying…', isDisabled: true, showSpinner: true }
+  if (flowState.phase === "relaying")
+    return { label: "Relaying…", isDisabled: true, showSpinner: true };
 
-  if (flowState.phase === 'done')
+  if (flowState.phase === "done")
     return {
-      label: 'Done ✓ — view on explorer',
+      label: "Done ✓ — view on explorer",
       isDisabled: false,
       showSpinner: false,
       href: explorerUrl,
       icon: <CheckIcon />,
-    }
+    };
 
   return {
-    label: 'Try again',
+    label: "Try again",
     isDisabled: false,
     showSpinner: false,
     icon: <RetryIcon />,
-  }
+  };
 }
 
 function failureHeadline(failedStep: BridgeStepId, kind: string) {
-  if (kind === 'wallet-rejected') return 'Transaction rejected'
-  if (failedStep === 'approve') return 'Approval failed'
-  if (failedStep === 'submit') return 'Bridge transaction failed'
-  return 'Relay failed'
+  if (kind === "wallet-rejected") return "Transaction rejected";
+  if (failedStep === "approve") return "Approval failed";
+  if (failedStep === "submit") return "Bridge transaction failed";
+  return "Relay failed";
 }
 
 function SwapIcon() {
@@ -359,7 +383,7 @@ function SwapIcon() {
         strokeLinejoin="round"
       />
     </svg>
-  )
+  );
 }
 
 function WalletIcon() {
@@ -379,7 +403,7 @@ function WalletIcon() {
         strokeLinejoin="round"
       />
     </svg>
-  )
+  );
 }
 
 function TransferIcon() {
@@ -399,7 +423,7 @@ function TransferIcon() {
         strokeLinejoin="round"
       />
     </svg>
-  )
+  );
 }
 
 function RetryIcon() {
@@ -419,7 +443,7 @@ function RetryIcon() {
         strokeLinejoin="round"
       />
     </svg>
-  )
+  );
 }
 
 function CheckIcon() {
@@ -439,5 +463,5 @@ function CheckIcon() {
         strokeLinejoin="round"
       />
     </svg>
-  )
+  );
 }
