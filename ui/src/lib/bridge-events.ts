@@ -9,5 +9,5 @@ export const bridgeTxInitiatedEvent = getAbiItem({
 
 export const bridgeFinalizedEvent = getAbiItem({
   abi: collateralTokenBridgeAbi,
-  name: 'BridgeFinalized',
+  name: 'BridgeTxFinalized',
 })

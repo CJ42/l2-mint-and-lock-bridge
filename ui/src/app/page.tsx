@@ -30,10 +30,10 @@ export default function HomePage() {
       <div className={styles.top}>
         <div className={styles.hero}>
           <h1 className={styles.title}>
-            L2 Bridge<span aria-hidden="true">.</span>
+            L2 USDC Bridge<span aria-hidden="true">.</span>
           </h1>
           <p className={styles.subtitle}>
-            Move tokens between Arbitrum and Base Sepolia
+            Move USDC between Base and Arbitrum Sepolia
           </p>
           <BridgeStepper flowState={flow.flowState} />
         </div>

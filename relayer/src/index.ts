@@ -144,8 +144,8 @@ function createLogHandler({
 
   const expectedDestinationChainId =
     direction === "base-to-arbitrum"
-      ? BASE_SEPOLIA_CHAIN_ID
-      : ARBITRUM_SEPOLIA_CHAIN_ID;
+      ? ARBITRUM_SEPOLIA_CHAIN_ID
+      : BASE_SEPOLIA_CHAIN_ID;
 
   return function handleLog(log: BridgeTxInitiatedLog): void {
     const expectedSourceAddress =

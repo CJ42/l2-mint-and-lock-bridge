@@ -213,7 +213,7 @@ function watchChainEvents({
   const unwatchFinalized = client.watchContractEvent({
     address: bridgeAddress,
     abi: [bridgeFinalizedEvent],
-    eventName: 'BridgeFinalized',
+    eventName: 'BridgeTxFinalized',
     onLogs: () => onUpdate(),
     onError: () => onUpdate(),
   })

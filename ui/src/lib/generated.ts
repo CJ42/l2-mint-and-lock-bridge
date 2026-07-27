@@ -176,7 +176,7 @@ export const collateralTokenBridgeAbi = [
         indexed: false,
       },
     ],
-    name: 'BridgeFinalized',
+    name: 'BridgeTxFinalized',
   },
   {
     type: 'event',
@@ -647,7 +647,7 @@ export const syntheticTokenBridgeAbi = [
         indexed: false,
       },
     ],
-    name: 'BridgeFinalized',
+    name: 'BridgeTxFinalized',
   },
   {
     type: 'event',
@@ -877,10 +877,10 @@ export const wrappedTokenAbi = [
   },
   {
     type: 'function',
-    inputs: [{ name: 'amount', internalType: 'uint256', type: 'uint256' }],
+    inputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     name: 'burn',
     outputs: [],
-    stateMutability: 'nonpayable',
+    stateMutability: 'pure',
   },
   {
     type: 'function',
@@ -1286,12 +1286,12 @@ export const useWatchCollateralTokenBridgeEvent =
   /*#__PURE__*/ createUseWatchContractEvent({ abi: collateralTokenBridgeAbi })
 
 /**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link collateralTokenBridgeAbi}__ and `eventName` set to `"BridgeFinalized"`
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link collateralTokenBridgeAbi}__ and `eventName` set to `"BridgeTxFinalized"`
  */
-export const useWatchCollateralTokenBridgeBridgeFinalizedEvent =
+export const useWatchCollateralTokenBridgeBridgeTxFinalizedEvent =
   /*#__PURE__*/ createUseWatchContractEvent({
     abi: collateralTokenBridgeAbi,
-    eventName: 'BridgeFinalized',
+    eventName: 'BridgeTxFinalized',
   })
 
 /**
@@ -1718,12 +1718,12 @@ export const useWatchSyntheticTokenBridgeEvent =
   /*#__PURE__*/ createUseWatchContractEvent({ abi: syntheticTokenBridgeAbi })
 
 /**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link syntheticTokenBridgeAbi}__ and `eventName` set to `"BridgeFinalized"`
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link syntheticTokenBridgeAbi}__ and `eventName` set to `"BridgeTxFinalized"`
  */
-export const useWatchSyntheticTokenBridgeBridgeFinalizedEvent =
+export const useWatchSyntheticTokenBridgeBridgeTxFinalizedEvent =
   /*#__PURE__*/ createUseWatchContractEvent({
     abi: syntheticTokenBridgeAbi,
-    eventName: 'BridgeFinalized',
+    eventName: 'BridgeTxFinalized',
   })
 
 /**
@@ -1810,6 +1810,14 @@ export const useReadWrappedTokenBalanceOf = /*#__PURE__*/ createUseReadContract(
 )
 
 /**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link wrappedTokenAbi}__ and `functionName` set to `"burn"`
+ */
+export const useReadWrappedTokenBurn = /*#__PURE__*/ createUseReadContract({
+  abi: wrappedTokenAbi,
+  functionName: 'burn',
+})
+
+/**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link wrappedTokenAbi}__ and `functionName` set to `"decimals"`
  */
 export const useReadWrappedTokenDecimals = /*#__PURE__*/ createUseReadContract({
@@ -1855,14 +1863,6 @@ export const useWriteWrappedToken = /*#__PURE__*/ createUseWriteContract({
 export const useWriteWrappedTokenApprove = /*#__PURE__*/ createUseWriteContract(
   { abi: wrappedTokenAbi, functionName: 'approve' },
 )
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link wrappedTokenAbi}__ and `functionName` set to `"burn"`
- */
-export const useWriteWrappedTokenBurn = /*#__PURE__*/ createUseWriteContract({
-  abi: wrappedTokenAbi,
-  functionName: 'burn',
-})
 
 /**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link wrappedTokenAbi}__ and `functionName` set to `"burnFrom"`
@@ -1913,15 +1913,6 @@ export const useSimulateWrappedTokenApprove =
   /*#__PURE__*/ createUseSimulateContract({
     abi: wrappedTokenAbi,
     functionName: 'approve',
-  })
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link wrappedTokenAbi}__ and `functionName` set to `"burn"`
- */
-export const useSimulateWrappedTokenBurn =
-  /*#__PURE__*/ createUseSimulateContract({
-    abi: wrappedTokenAbi,
-    functionName: 'burn',
   })
 
 /**

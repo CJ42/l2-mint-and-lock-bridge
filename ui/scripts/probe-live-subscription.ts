@@ -177,7 +177,7 @@ async function probeContractSubscription({
   const unwatch = client.watchContractEvent({
     address: bridgeAddress,
     abi: [bridgeFinalizedEvent],
-    eventName: 'BridgeFinalized',
+    eventName: 'BridgeTxFinalized',
     onLogs() {},
     onError(error) {
       subscriptionError = error
