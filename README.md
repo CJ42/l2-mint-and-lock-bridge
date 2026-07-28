@@ -111,16 +111,24 @@ The relayer only reads blocks five confirmations behind the origin head, which p
 | ✅ Real-USDC Mainnet fork tests           | Unit tests and live smoke testing cover the initial path                                                                                                                                                           | Base Sepolia fork test against deployed USDC bytecode                                                                                                                                                 |
 | ✅ Fees / destination gas payment         | Requires more complex smart contracts implementation and gas oracles                                                                                                                                               | Enforce user to pay for the destination gas with off-chain quotes via oracles and relayer withdrawals so they can reimburse the gas paid for relaying the bridge transaction on the destination chain |
 | ✅ Multiple destination chain for a token | Requires a rebalancer and increase complexity of managing                                                                                                                                                          | Asset gateway registry and routers. Allowing to rebalance                                                                                                                                             |
-| ✅ L2 Bridge Finalization                 | Time                                                                                                                                                                                                               |                                                                                                                                                                                                       |
-| Failed-finalization recovery              | This is the most security-sensitive bridge path                                                                                                                                                                    | Attested-failure refunds or a carefully designed timeout reclaim                                                                                                                                      |
-| Rate limits and caps                      | Low value on a public testnet demo                                                                                                                                                                                 | Per-message and per-block limits                                                                                                                                                                      |
+| ✅ L2 Bridge Finalization                 | Time                                                                                                                                                                                                               | Ensure the original bridge transaction on the source chain has reached finality before minting on the destination chain.                                                                              |
+| ✅ Failed-finalization recovery           | Time. This is the most security-sensitive bridge path                                                                                                                                                              | Attested-failure refunds or a carefully designed timeout reclaim                                                                                                                                      |
+| ✅ Rate limits and caps                   | Low value on a public testnet demo                                                                                                                                                                                 | Per-message and per-block limits + implement a queue for high traffic                                                                                                                                 |
 
 ## What I would improve with more time?
+
+The next things I would prioritise to improve with more time would be:
+
+- **ensure source chain transactions are finalized with L1 confirmation**
+- **safe stuck-fund recovery**
+- **gas fees on destination chain paid by user**
+- separating relayer vs validator (signature verification)
 
 ### UI
 
 - I would improve the UI with a better transaction handling. For instance for stuck transactions, either canceling them (with 0 value transfer to self), or re-submitting a transaction with `maxFeePerGas` and `maxPriorityFeePerGas`.
 - I would improve input validations and test more if I enter random inputs.
+- **(more future advanced improvement)** a durable indexed message API, with cached historical bridge messages
 
 ### Relayer
 
@@ -134,16 +142,6 @@ The relayer only reads blocks five confirmations behind the origin head, which p
 - Currently, the relayer pays entirely for the gas on the destination chain. I would have implemented a feature similar to Hyperlane **Interchain Gas Payment**, where the user sends native tokens alongside the bridge transaction, that the relayer can then retrieve to reimburse the gas cost it had to pay for sending the final bridge transaction on the destination chain.
 - I would have also considered implementing a mechanism where the user can send an additional _"tip for the relayer"_ (a small amount of native tokens) so that the relayer is incentivized to pick the bridge transaction first.
 - **(more future advanced improvement)** I would have not hardcoded the `DESTINATION_CHAIN_ID` in the bridge smart contracts. Instead, I would have allowed to pass the destination chain ID as a parameter to `bridgeTx(...)`. The bridge admin would be allowed to add new destination chain to bridge to through a function `addDestinationChain(...)`
-
-The next priorities:
-
-- signature verification
-- gas fees
-- safe stuck-fund recovery
-- rate limits
-- finalized L1 confirmation
-- a durable indexed message API
-- and a gateway registry for additional assets and chains
 
 ## AI usage
 
